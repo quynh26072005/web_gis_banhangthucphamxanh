@@ -1,0 +1,7 @@
+from django.apps import AppConfig
+
+
+class FoodStoreConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'food_store'
+    verbose_name = 'Cửa hàng Thực phẩm Sạch'
