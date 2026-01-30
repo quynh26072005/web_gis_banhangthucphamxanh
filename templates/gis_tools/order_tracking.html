@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Clean Food GIS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tracking-header {
+        background: linear-gradient(135deg, #F093FB 0%, #F5576C 100%);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .tracking-header h1 {
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .order-info-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .order-timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-bottom: 2rem;
+    }
+
+    .timeline-item:before {
+        content: '';
+        position: absolute;
+        left: -2rem;
+        top: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #667eea;
+        border: 3px solid white;
+        box-shadow: 0 0 0 3px #667eea;
+    }
+
+    .timeline-item:after {
+        content: '';
+        position: absolute;
+        left: -1.68rem;
+        top: 12px;
+        width: 2px;
+        height: calc(100% - 12px);
+        background: #e2e8f0;
+    }
+
+    .timeline-item:last-child:after {
+        display: none;
+    }
+
+    .timeline-item.active:before {
+        background: #48bb78;
+        box-shadow: 0 0 0 3px #48bb78, 0 0 20px rgba(72, 187, 120, 0.5);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.1);
+        }
+    }
+
+    .timeline-content {
+        background: #f7fafc;
+        padding: 1rem;
+        border-radius: 10px;
+        border-left: 3px solid #667eea;
+    }
+
+    .timeline-item.active .timeline-content {
+        background: linear-gradient(135deg, #e6fffa 0%, #e9f8f3 100%);
+        border-left-color: #48bb78;
+    }
+
+    .map-container {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .info-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+
+    .info-box h4 {
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+
+    .info-box p {
+        margin: 0;
+        opacity: 0.9;
+    }
+
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .status-pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-processing {
+        background: #dbeafe;
+        color: #1e3a8a;
+    }
+
+    .status-shipping {
+        background: #e0e7ff;
+        color: #3730a3;
+    }
+
+    .status-delivered {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .back-btn {
+        background: white;
+        color: #F5576C;
+        border: 2px solid #F5576C;
+        padding: 0.5rem 1.5rem;
+        border-radius: 25px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        font-weight: 600;
+    }
+
+    .back-btn:hover {
+        background: #F5576C;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(245, 87, 108, 0.3);
+    }
+
+    .distance-info {
+        background: white;
+        padding: 1rem;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .distance-info i {
+        font-size: 2rem;
+        color: #667eea;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tracking-header">
+    <div class="container">
+        <a href="{% url 'gis_tools:home' %}" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Quay lại
+        </a>
+        <h1 class="mt-3"><i class="fas fa-route"></i> {{ title }}</h1>
+        <p class="lead mb-0">Theo dõi hành trình giao hàng trên bản đồ</p>
+    </div>
+</div>
+
+<div class="container">
+    {% if error %}
+    <div class="alert alert-danger" style="border-radius: 12px;">
+        <i class="fas fa-exclamation-circle"></i> {{ error }}
+    </div>
+    {% else %}
+    <div class="row">
+        <!-- Cột bên trái - Bản đồ -->
+        <div class="col-lg-8 mb-4">
+            <div class="map-container">
+                <h3 class="mb-3">
+                    <i class="fas fa-map-marked-alt"></i> Bản đồ Theo dõi
+                </h3>
+                {% if map_html %}
+                {{ map_html|safe }}
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-map"></i> Không có thông tin vị trí cho đơn hàng này
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Distance info -->
+            {% if order.delivery_location %}
+            <div class="distance-info">
+                <i class="fas fa-road"></i>
+                <div>
+                    <strong>Khoảng cách giao hàng</strong>
+                    <p class="mb-0 text-muted">Được tính từ trang trại đến địa chỉ giao hàng</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Cột bên phải - Thông tin đơn hàng -->
+        <div class="col-lg-4">
+            <div class="order-info-card">
+                <h3 class="mb-3">
+                    <i class="fas fa-box"></i> Thông tin Đơn hàng
+                </h3>
+
+                <div class="info-box">
+                    <h4>Mã đơn hàng</h4>
+                    <p>#{{ order.id }}</p>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Trạng thái:</strong><br>
+                    <span class="status-badge status-{{ order.status }}">
+                        {% if order.status == 'pending' %}
+                        <i class="fas fa-clock"></i> Chờ xác nhận
+                        {% elif order.status == 'processing' %}
+                        <i class="fas fa-cog fa-spin"></i> Đang xử lý
+                        {% elif order.status == 'shipping' %}
+                        <i class="fas fa-shipping-fast"></i> Đang giao hàng
+                        {% elif order.status == 'delivered' %}
+                        <i class="fas fa-check-circle"></i> Đã giao hàng
+                        {% else %}
+                        {{ order.get_status_display }}
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="mb-3">
+                    <strong><i class="fas fa-user"></i> Khách hàng:</strong><br>
+                    {{ order.customer.user.get_full_name|default:order.customer.user.username }}
+                </div>
+
+                <div class="mb-3">
+                    <strong><i class="fas fa-phone"></i> Điện thoại:</strong><br>
+                    {{ order.customer.phone|default:"Chưa cập nhật" }}
+                </div>
+
+                <div class="mb-3">
+                    <strong><i class="fas fa-map-marker-alt"></i> Địa chỉ giao hàng:</strong><br>
+                    {{ order.delivery_address }}
+                </div>
+
+                <div class="mb-3">
+                    <strong><i class="fas fa-calendar"></i> Ngày đặt hàng:</strong><br>
+                    {{ order.created_at|date:"d/m/Y H:i" }}
+                </div>
+
+                <div class="mb-3">
+                    <strong><i class="fas fa-dollar-sign"></i> Tổng tiền:</strong><br>
+                    <h4 class="text-success mb-0">{{ order.total_amount|floatformat:0 }} ₫</h4>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="order-info-card">
+                <h4 class="mb-3">
+                    <i class="fas fa-history"></i> Lịch sử Đơn hàng
+                </h4>
+
+                <div class="order-timeline">
+                    <div class="timeline-item {% if order.status == 'pending' %}active{% endif %}">
+                        <div class="timeline-content">
+                            <strong>Đơn hàng đã tạo</strong>
+                            <p class="text-muted mb-0 small">{{ order.created_at|date:"d/m/Y H:i" }}</p>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item {% if order.status == 'processing' %}active{% endif %}">
+                        <div class="timeline-content">
+                            <strong>Đang xử lý</strong>
+                            <p class="text-muted mb-0 small">Chuẩn bị hàng từ trang trại</p>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item {% if order.status == 'shipping' %}active{% endif %}">
+                        <div class="timeline-content">
+                            <strong>Đang giao hàng</strong>
+                            <p class="text-muted mb-0 small">Shipper đang trên đường giao hàng</p>
+                        </div>
+                    </div>
+
+                    <div class="timeline-item {% if order.status == 'delivered' %}active{% endif %}">
+                        <div class="timeline-content">
+                            <strong>Đã giao hàng</strong>
+                            <p class="text-muted mb-0 small">Giao hàng thành công</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
