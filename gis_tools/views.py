@@ -97,6 +97,13 @@ def store_locator_view(request):
     }
     return render(request, 'gis_tools/store_locator.html', context)
 
+def route_planner_view(request):
+    """Lập kế hoạch tuyến đường giao hàng"""
+    context = {
+        'title': 'Lập kế hoạch tuyến đường',
+    }
+    return render(request, 'gis_tools/route_planner.html', context)
+
 def farm_analysis_view(request, farm_id):
     """Phân tích chi tiết một trang trại"""
     farm = get_object_or_404(Farm, pk=farm_id)
@@ -188,3 +195,25 @@ def geocode_address_api(request):
 def delivery_zones_geojson_api(request):
     data = DeliveryZoneManager.get_all_delivery_zones_geojson()
     return JsonResponse(data)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def optimize_route_api(request):
+    """API tối ưu hóa tuyến đường giao hàng"""
+    try:
+        data = json.loads(request.body)
+        start_lat = float(data.get('start_lat'))
+        start_lng = float(data.get('start_lng'))
+        delivery_points = data.get('delivery_points', [])
+        
+        result = RouteOptimizer.optimize_delivery_route(start_lat, start_lng, delivery_points)
+        
+        return JsonResponse({
+            'success': True,
+            'result': result
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)

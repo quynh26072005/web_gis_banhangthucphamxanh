@@ -10,7 +10,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),  # Auth URLs (login, logout, password reset)
     path('', include('food_store.urls')),  # Main website URLs
-    path('gis-tools/', include('gis_tools.urls')),  # GIS tools URLs - Safe Mode enabled
+    path('gis/', include('gis_tools.urls')),  # GIS tools URLs - Safe Mode enabled
 ]
 
 # Serve media files during development

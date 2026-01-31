@@ -1,0 +1,727 @@
+/* ====================================
+   Modern Admin UI Styling
+   Clean Food GIS Admin Interface
+   ==================================== */
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* Global Overrides */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f7fa;
+    margin: 0;
+    padding: 0;
+}
+
+/* Admin Branding */
+.admin-branding {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 25px 30px;
+    border-bottom: 3px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.admin-branding h1 a {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    text-decoration: none;
+    color: white !important;
+    transition: all 0.3s ease;
+}
+
+.admin-branding h1 a:hover {
+    transform: scale(1.02);
+}
+
+.brand-icon {
+    font-size: 2.5em;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.brand-text {
+    font-size: 1.8em;
+    font-weight: 800;
+    background: rgba(255, 255, 255, 0.95);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.brand-subtitle {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95em;
+    margin-top: 5px;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+}
+
+/* Header Styling */
+#header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+#header a:link,
+#header a:visited {
+    color: white;
+}
+
+/* Sidebar Styling */
+#nav-sidebar {
+    background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%) !important;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.module caption,
+.module h2 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white !important;
+}
+
+#nav-sidebar .module th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 15px;
+    font-weight: 600;
+}
+
+#nav-sidebar .module caption {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 15px;
+    font-weight: 600;
+}
+
+#nav-sidebar a {
+    color: #ecf0f1 !important;
+    transition: all 0.3s ease;
+}
+
+#nav-sidebar a:hover {
+    background: rgba(102, 126, 234, 0.2) !important;
+    color: white !important;
+    padding-left: 20px !important;
+}
+
+#nav-sidebar .current-app,
+#nav-sidebar .current-model {
+    background: rgba(102, 126, 234, 0.3) !important;
+}
+
+/* Sidebar links */
+.app-list a {
+    color: #ecf0f1 !important;
+    padding: 8px 15px;
+    display: block;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.app-list a:hover {
+    background: rgba(102, 126, 234, 0.2) !important;
+    transform: translateX(5px);
+}
+
+.current-app a,
+.current-model a {
+    background: rgba(102, 126, 234, 0.3) !important;
+    font-weight: 600;
+}
+
+
+/* Module Styling */
+.module {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.module h2 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 20px;
+    font-weight: 600;
+    border-radius: 12px 12px 0 0;
+}
+
+/* Buttons */
+.button,
+input[type=submit],
+input[type=button],
+.submit-row input {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.button:hover,
+input[type=submit]:hover,
+input[type=button]:hover,
+.submit-row input:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.button.default,
+input[type=submit].default {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+/* Change List */
+#changelist {
+    background: white;
+    padding: 20px;
+    margin: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+#changelist .results {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: none;
+    border: 1px solid #e9ecef;
+}
+
+#changelist-filter {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e9ecef;
+}
+
+/* Search Form */
+#changelist-search {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+}
+
+#searchbar {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    padding: 10px 15px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+#searchbar:focus {
+    background: white;
+    border-color: #667eea;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Tables */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    background: white;
+}
+
+thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white !important;
+    padding: 15px;
+    font-weight: 600;
+    text-align: left;
+    border: none;
+}
+
+tbody tr {
+    background: white;
+    transition: all 0.2s ease;
+}
+
+tbody tr:nth-child(even) {
+    background: #f8f9fa;
+}
+
+tbody tr:hover {
+    background: #e8f0fe !important;
+    transform: scale(1.001);
+}
+
+tbody td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #e9ecef;
+    color: #333 !important;
+}
+
+tbody td a {
+    color: #667eea !important;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+tbody td a:hover {
+    text-decoration: underline;
+    color: #764ba2 !important;
+}
+
+/* Table action column */
+th.action-checkbox-column,
+td.action-checkbox-column {
+    width: 1.5em;
+    text-align: center;
+}
+
+/* Result list */
+#result_list tbody tr {
+    background: white !important;
+}
+
+#result_list tbody tr:nth-child(even) {
+    background: #f8f9fa !important;
+}
+
+#result_list tbody tr:hover {
+    background: #e8f0fe !important;
+}
+
+#result_list tbody td {
+    color: #333 !important;
+    border-bottom: 1px solid #e9ecef;
+}
+
+#result_list tbody td a {
+    color: #667eea !important;
+}
+
+/* Forms */
+.form-row {
+    background: white;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.form-row label {
+    color: #333;
+    font-weight: 500;
+}
+
+.form-row:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="url"],
+input[type="date"],
+input[type="time"],
+textarea,
+select {
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    padding: 8px 12px;
+    transition: all 0.3s ease;
+    font-family: 'Inter', sans-serif;
+    background: white;
+    color: #333;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+input[type="url"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+textarea:focus,
+select:focus {
+    border-color: #667eea;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    background: white;
+}
+
+/* Breadcrumbs */
+.breadcrumbs {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 15px 20px;
+    border-radius: 0;
+    margin: 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    color: white;
+}
+
+.breadcrumbs a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+.breadcrumbs a:hover {
+    opacity: 1;
+    text-decoration: underline;
+}
+
+/* Messages */
+.messagelist {
+    margin: 20px;
+    padding: 0;
+    list-style: none;
+}
+
+.messagelist li {
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    font-weight: 500;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.messagelist .success {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    color: #155724;
+    border-left: 4px solid #28a745;
+}
+
+.messagelist .warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+    color: #856404;
+    border-left: 4px solid #ffc107;
+}
+
+.messagelist .error {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+
+/* Pagination */
+.paginator {
+    padding: 15px;
+    text-align: center;
+}
+
+.paginator a,
+.paginator span {
+    display: inline-block;
+    padding: 8px 12px;
+    margin: 0 3px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.paginator a {
+    background: white;
+    color: #667eea;
+    text-decoration: none;
+    border: 2px solid #e9ecef;
+}
+
+.paginator a:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    transform: translateY(-2px);
+}
+
+.paginator .this-page {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+}
+
+/* Action Dropdown */
+.actions {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+}
+
+.actions label {
+    color: #333;
+    font-weight: 500;
+    margin-right: 10px;
+}
+
+.actions select {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 2px solid #e9ecef;
+    background: white;
+    color: #333;
+    font-family: 'Inter', sans-serif;
+}
+
+.actions button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    margin-left: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.actions button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+/* Action span (like pagination counter) */
+.actions span.action-counter,
+.actions span.clear,
+.actions span.question {
+    color: #666;
+    margin: 0 10px;
+}
+
+/* Inline Models */
+.inline-group {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+}
+
+.inline-group .tabular {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Submit Row */
+.submit-row {
+    background: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Fieldsets */
+fieldset.module {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+fieldset.module h2 {
+    background: none;
+    color: #333;
+    padding: 0 0 10px 0;
+    border-bottom: 2px solid #667eea;
+    margin-bottom: 15px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .quick-actions {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.module,
+.stat-card,
+.chart-container {
+    animation: fadeIn 0.5s ease;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* ====================================
+   AGGRESSIVE OVERRIDES - FORCE WHITE BACKGROUNDS
+   ==================================== */
+
+/* Force action bar styling */
+.actions,
+.actions form,
+.changelist-action-list {
+    background: white !important;
+    color: #333 !important;
+}
+
+.actions label,
+.actions select,
+.actions button {
+    color: #333 !important;
+}
+
+.actions select {
+    background: white !important;
+    border: 2px solid #e9ecef !important;
+}
+
+/* Force all form elements to white background */
+select,
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="url"],
+input[type="date"],
+input[type="time"],
+input[type="tel"],
+textarea {
+    background: white !important;
+    color: #333 !important;
+    border: 2px solid #e9ecef !important;
+}
+
+/* Force table row backgrounds */
+#result_list tbody tr,
+table tbody tr,
+.results tbody tr {
+    background: white !important;
+}
+
+#result_list tbody tr:nth-child(even),
+table tbody tr:nth-child(even),
+.results tbody tr:nth-child(even) {
+    background: #f8f9fa !important;
+}
+
+#result_list tbody tr:hover,
+table tbody tr:hover,
+.results tbody tr:hover {
+    background: #e8f0fe !important;
+}
+
+/* Force table cell text color */
+#result_list tbody td,
+table tbody td,
+.results tbody td,
+td,
+th {
+    color: #333 !important;
+}
+
+#result_list tbody td a,
+table tbody td a,
+.results tbody td a {
+    color: #667eea !important;
+}
+
+/* Force pagination background */
+.paginator,
+.pagination {
+    background: white !important;
+    color: #333 !important;
+}
+
+/* Force filter sidebar */
+#changelist-filter li,
+#changelist-filter h2,
+#changelist-filter h3 {
+    background: white !important;
+    color: #333 !important;
+}
+
+/* Force form rows */
+.form-row,
+.form-group {
+    background: white !important;
+}
+
+.form-row label {
+    color: #333 !important;
+}
+
+/* Specific Django admin selectors */
+.change-list .actions select {
+    background: white !important;
+}
+
+.filtered .actions {
+    background: white !important;
+}
+
+/* Override any dark theme remnants */
+.module,
+.inline-group,
+fieldset {
+    background: white !important;
+}
+
+/* Submit row */
+.submit-row {
+    background: white !important;
+    color: #333 !important;
+}
+
+/* Ensure readability */
+body,
+html {
+    color: #333 !important;
+}
+
+a {
+    color: #667eea !important;
+}
+
+a:hover {
+    color: #764ba2 !important;
+}

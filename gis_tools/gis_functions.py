@@ -63,6 +63,50 @@ class FarmLocationAnalyzer:
         return nearest_farms[:limit]
     
     @staticmethod
+    def find_nearest_farms_by_road(latitude, longitude, max_distance_km=50, limit=10):
+        """
+        Tìm farm gần nhất theo ĐƯỜNG ĐI THỰC TẾ (road routing)
+        
+        Args:
+            latitude: Vĩ độ khách hàng
+            longitude: Kinh độ khách hàng
+            max_distance_km: Khoảng cách tối đa (km)
+            limit: Số lượng farm tối đa trả về
+        
+        Returns:
+            List of Farm objects với attributes:
+                - distance_km: Khoảng cách đường bộ (km)
+                - duration_min: Thời gian di chuyển (phút)
+                - route_geometry: GeoJSON LineString
+                - shipping_fee: Phí giao hàng (VNĐ)
+        """
+        from .routing import get_route_with_fee
+        
+        all_farms = Farm.objects.all()
+        farms_with_route = []
+        
+        for farm in all_farms:
+            if farm.latitude and farm.longitude:
+                # Call routing API
+                route_info = get_route_with_fee(
+                    farm.latitude, farm.longitude,  # FROM farm
+                    latitude, longitude              # TO customer
+                )
+                
+                if route_info and route_info['distance_km'] <= max_distance_km:
+                    # Attach route info to farm object
+                    farm.distance_km = route_info['distance_km']
+                    farm.duration_min = route_info['duration_min']
+                    farm.route_geometry = route_info['geometry']
+                    farm.shipping_fee = route_info['shipping_fee']
+                    farms_with_route.append(farm)
+        
+        # Sort by road distance
+        farms_with_route.sort(key=lambda x: x.distance_km)
+        
+        return farms_with_route[:limit]
+    
+    @staticmethod
     def calculate_farm_distance(farm_location, customer_location):
         """
         Tính khoảng cách giữa trang trại và khách hàng
@@ -155,6 +199,60 @@ class DeliveryZoneManager:
         }
 
 
+class RouteOptimizer:
+    """Tối ưu hóa tuyến đường giao hàng"""
+    
+    @staticmethod
+    def optimize_delivery_route(user_lat, user_lng, delivery_points):
+        """
+        Tối ưu tuyến đường sử dụng thuật toán Nearest Neighbor (Greedy)
+        
+        Args:
+            user_lat: vĩ độ điểm bắt đầu
+            user_lng: kinh độ điểm bắt đầu
+            delivery_points: danh sách dict {'id', 'lat', 'lng', 'address'}
+        
+        Returns:
+            dict với 'route' (danh sách điểm theo thứ tự), 'total_distance' (km)
+        """
+        if not delivery_points:
+            return {'route': [], 'total_distance': 0}
+        
+        # Khởi tạo
+        current_lat, current_lng = user_lat, user_lng
+        unvisited = delivery_points.copy()
+        route = []
+        total_distance = 0
+        
+        # Nearest Neighbor algorithm
+        while unvisited:
+            # Tìm điểm gần nhất
+            nearest = min(unvisited, key=lambda p: calculate_distance(
+                current_lat, current_lng, p['lat'], p['lng']
+            ))
+            
+            # Tính khoảng cách
+            distance = calculate_distance(current_lat, current_lng, nearest['lat'], nearest['lng'])
+            total_distance += distance
+            
+            # Cập nhật
+            route.append({
+                **nearest,
+                'distance_from_previous': distance,
+                'cumulative_distance': total_distance
+            })
+            
+            # Di chuyển đến điểm tiếp theo
+            current_lat, current_lng = nearest['lat'], nearest['lng']
+            unvisited.remove(nearest)
+        
+        return {
+            'route': route,
+            'total_distance': round(total_distance, 2),
+            'num_stops': len(route)
+        }
+
+
 class MapGenerator:
     """Tạo bản đồ tương tác với Folium"""
     
@@ -166,6 +264,25 @@ class MapGenerator:
             zoom_start=zoom,
             tiles='OpenStreetMap'
         )
+        
+        # Tạo MarkerCluster để group markers
+        from folium.plugins import MarkerCluster
+        marker_cluster = MarkerCluster(
+            name='Trang trại',
+            overlay=True,
+            control=True,
+            icon_create_function="""
+                function(cluster) {
+                    var count = cluster.getChildCount();
+                    var size = count < 10 ? 'small' : count < 50 ? 'medium' : 'large';
+                    return L.divIcon({
+                        html: '<div><span>' + count + '</span></div>',
+                        className: 'marker-cluster marker-cluster-' + size,
+                        iconSize: new L.Point(40, 40)
+                    });
+                }
+            """
+        ).add_to(m)
         
         # Thêm các trang trại lên bản đồ
         farms = Farm.objects.all()
@@ -179,9 +296,8 @@ class MapGenerator:
                 <div style="width: 200px;">
                     <h4>{farm.name}</h4>
                     <p><strong>Địa chỉ:</strong> {farm.address}</p>
-                    <p><strong>Điện thoại:</strong> {farm.phone}</p>
-                    <p><strong>Chứng nhận hữu cơ:</strong> {'Có' if farm.organic_certified else 'Không'}</p>
-                    <p>{farm.description[:100]}...</p>
+                    <p><strong>Loại:</strong> {'Hữu cơ' if farm.organic_certified else 'Sạch'}</p>
+                    {f'<p><strong>Mô tả:</strong> {farm.description[:100]}...</p>' if farm.description else ''}
                 </div>
                 """
                 
@@ -190,8 +306,9 @@ class MapGenerator:
                     popup=folium.Popup(popup_html, max_width=250),
                     tooltip=farm.name,
                     icon=folium.Icon(color=icon_color, icon=icon, prefix='fa')
-                ).add_to(m)
+                ).add_to(marker_cluster)  # Add to cluster instead of map directly
         
+        folium.LayerControl().add_to(m)
         return m
     
     @staticmethod
@@ -203,7 +320,7 @@ class MapGenerator:
         )
         
         zones_data = DeliveryZoneManager.get_all_delivery_zones_geojson()
-        colors = ['red', 'blue', 'green', 'purple', 'orange']
+        colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DFE6E9']
         
         for i, feature in enumerate(zones_data['features']):
             coords = feature['geometry']['coordinates'][0]
@@ -211,27 +328,45 @@ class MapGenerator:
             folium_coords = [[c[1], c[0]] for c in coords]
             props = feature['properties']
             
+            # Tính center của polygon để làm tâm vòng tròn
+            center_lat = sum([c[0] for c in folium_coords]) / len(folium_coords)
+            center_lng = sum([c[1] for c in folium_coords]) / len(folium_coords)
+            
             color = colors[i % len(colors)]
             
             popup_html = f"""
-            <div>
-                <h4>{props['name']}</h4>
-                <p><strong>Phí:</strong> {props['delivery_fee']:,.0f} VNĐ</p>
-                <p><strong>Thời gian:</strong> {props['delivery_time']}</p>
+            <div style="font-family: Arial, sans-serif;">
+                <h4 style="margin: 0 0 10px 0; color: {color};">{props['name']}</h4>
+                <p style="margin: 5px 0;"><strong>📍 Phí giao hàng:</strong> {props['delivery_fee']:,.0f} VNĐ</p>
+                <p style="margin: 5px 0;"><strong>⏰ Thời gian:</strong> {props['delivery_time']}</p>
+                <p style="margin: 5px 0;"><strong>📊 Trạng thái:</strong> <span style="color: green;">Hoạt động</span></p>
             </div>
             """
             
-            folium.Polygon(
-                locations=folium_coords,
-                popup=folium.Popup(popup_html, max_width=200),
-                tooltip=props['name'],
+            # Vẽ vòng tròn phạm vi phủ sóng (ước lượng bán kính ~5km)
+            folium.Circle(
+                location=[center_lat, center_lng],
+                radius=5000,  # 5km radius
+                popup=folium.Popup(popup_html, max_width=300),
+                tooltip=f"{props['name']} - {props['delivery_time']}",
                 color=color,
                 fill=True,
                 fillColor=color,
-                fillOpacity=0.3
+                fillOpacity=0.2,
+                weight=3,
+                opacity=0.8
+            ).add_to(m)
+            
+            # Thêm marker cho center
+            folium.Marker(
+                location=[center_lat, center_lng],
+                popup=popup_html,
+                tooltip=props['name'],
+                icon=folium.Icon(color='blue' if i % 2 == 0 else 'green', icon='truck', prefix='fa')
             ).add_to(m)
         
         return m
+
     
     @staticmethod
     def create_heatmap_map():
@@ -277,17 +412,36 @@ class MapGenerator:
             icon=folium.Icon(color='red', icon='home', prefix='fa')
         ).add_to(m)
         
-        # Farm Locations
-        for item in order.items.all():
-            farm = item.product.farm
-            if farm.latitude and farm.longitude:
-                folium.Marker(
-                    location=[farm.latitude, farm.longitude],
-                    popup=farm.name,
-                    icon=folium.Icon(color='green', icon='leaf', prefix='fa')
+        # Assigned Farm (if exists)
+        if order.assigned_farm and order.assigned_farm.latitude and order.assigned_farm.longitude:
+            farm = order.assigned_farm
+            
+            folium.Marker(
+                location=[farm.latitude, farm.longitude],
+                popup=f"<b>{farm.name}</b><br>Farm được gán cho đơn hàng",
+                icon=folium.Icon(color='green', icon='leaf', prefix='fa')
+            ).add_to(m)
+            
+            # Lấy route thực tế từ routing API
+            from .routing import get_route_with_fee
+            route_info = get_route_with_fee(
+                farm.latitude, farm.longitude,
+                order.delivery_latitude, order.delivery_longitude
+            )
+            
+            if route_info:
+                # Hiển thị route THỰC TẾ theo đường phố
+                folium.GeoJson(
+                    route_info['geometry'],
+                    style_function=lambda x: {
+                        'color': '#4285F4',
+                        'weight': 5,
+                        'opacity': 0.8
+                    },
+                    tooltip=f"📍 {route_info['distance_km']:.1f} km | ⏱ {route_info['duration_min']:.0f} phút | 💰 {route_info['shipping_fee']:,} VNĐ"
                 ).add_to(m)
-                
-                # AntPath - Đường đi động
+            else:
+                # Fallback: nếu routing API lỗi, dùng đường thẳng
                 plugins.AntPath(
                     locations=[
                         [farm.latitude, farm.longitude],

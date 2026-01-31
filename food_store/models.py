@@ -183,6 +183,31 @@ class Order(models.Model):
     delivery_longitude = models.FloatField(null=True, blank=True, verbose_name="Kinh độ giao hàng")
     delivery_zone = models.ForeignKey(DeliveryZone, on_delete=models.SET_NULL, null=True, verbose_name="Khu vực giao hàng")
     
+    # Auto-assigned farm for optimized delivery
+    assigned_farm = models.ForeignKey(
+        Farm, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='assigned_orders',
+        verbose_name="Trang trại được gán",
+        help_text="Trang trại gần nhất được tự động gán để giao hàng"
+    )
+    
+    # Routing information (for customer display)
+    delivery_distance_km = models.FloatField(
+        null=True, 
+        blank=True, 
+        verbose_name="Khoảng cách giao hàng (km)",
+        help_text="Khoảng cách đường bộ thực tế từ farm đến khách hàng"
+    )
+    delivery_duration_min = models.FloatField(
+        null=True, 
+        blank=True, 
+        verbose_name="Thời gian giao hàng (phút)",
+        help_text="Thời gian di chuyển ước tính"
+    )
+    
     # Order totals
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Tổng tiền hàng")
     delivery_fee = models.DecimalField(max_digits=8, decimal_places=2, verbose_name="Phí giao hàng")
@@ -202,6 +227,44 @@ class Order(models.Model):
     
     def __str__(self):
         return f"Đơn hàng #{self.pk} - {self.customer.user.get_full_name()}"
+    
+    def auto_assign_nearest_farm(self):
+        """Tự động gán farm gần nhất dựa trên ĐƯỜNG ĐI THỰC TẾ"""
+        if not self.delivery_latitude or not self.delivery_longitude:
+            return None
+        
+        from gis_tools.gis_functions import FarmLocationAnalyzer
+        
+        # Tìm farm gần nhất theo ROAD ROUTING
+        nearest_farms = FarmLocationAnalyzer.find_nearest_farms_by_road(
+            self.delivery_latitude,
+            self.delivery_longitude,
+            max_distance_km=50
+        )
+        
+        if nearest_farms:
+            # Lấy farm đầu tiên (gần nhất theo đường bộ)
+            nearest_farm = nearest_farms[0]
+            self.assigned_farm = nearest_farm
+            
+            # Return route info để caller có thể dùng
+            return {
+                'farm': nearest_farm,
+                'distance_km': nearest_farm.distance_km,
+                'duration_min': nearest_farm.duration_min,
+                'shipping_fee': nearest_farm.shipping_fee,
+                'route_geometry': nearest_farm.route_geometry
+            }
+        
+        return None
+    
+    def save(self, *args, **kwargs):
+        """Override save để tự động gán farm nếu chưa có"""
+        # Chỉ auto-assign nếu chưa có assigned_farm
+        if not self.assigned_farm and self.delivery_latitude and self.delivery_longitude:
+            self.auto_assign_nearest_farm()
+        
+        super().save(*args, **kwargs)
 
 
 class OrderItem(models.Model):

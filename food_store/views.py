@@ -407,13 +407,27 @@ def create_order_api(request):
             data = json.loads(request.body)
             
             # Get delivery location
-            latitude = float(data.get('latitude'))
-            longitude = float(data.get('longitude'))
+            latitude = data.get('latitude')
+            longitude = data.get('longitude')
             delivery_address = data.get('delivery_address', '')
             notes = data.get('notes', '')
             
-            # For now, assume delivery is available with fixed fee
-            delivery_fee = 30000  # 30,000 VND
+            # Validate coordinates
+            if not latitude or not longitude:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Vui lòng nhấn "Lấy vị trí hiện tại" hoặc "Tìm từ địa chỉ" để xác định tọa độ giao hàng'
+                }, status=400)
+            
+            try:
+                latitude = float(latitude)
+                longitude = float(longitude)
+            except (ValueError, TypeError):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Tọa độ không hợp lệ. Vui lòng thử lại'
+                }, status=400)
+
             
             # Get cart
             cart = get_or_create_cart(request.user)
@@ -429,13 +443,13 @@ def create_order_api(request):
                 name="TP. Hồ Chí Minh",
                 defaults={
                     'area_description': 'Khu vực TP. Hồ Chí Minh',
-                    'delivery_fee': delivery_fee,
+                    'delivery_fee': 30000,  # Default, will be overridden
                     'delivery_time': '1-2 ngày',
                     'is_active': True
                 }
             )
             
-            # Create order
+            # Create order first (without farm assignment)
             order = Order.objects.create(
                 customer=cart.customer,
                 delivery_address=delivery_address,
@@ -443,10 +457,46 @@ def create_order_api(request):
                 delivery_longitude=longitude,
                 delivery_zone=delivery_zone,
                 subtotal=cart.total_amount,
-                delivery_fee=delivery_fee,
-                total_amount=cart.total_amount + delivery_fee,
+                delivery_fee=0,  # Will be set after routing
+                total_amount=cart.total_amount,  # Will be updated
                 notes=notes
             )
+            
+            # Auto-assign farm và tính phí ship dựa trên đường đi thực tế
+            route_info = order.auto_assign_nearest_farm()
+            
+            if route_info:
+                # Cập nhật phí ship và routing info
+                order.delivery_fee = route_info['shipping_fee']
+                order.delivery_distance_km = route_info['distance_km']
+                order.delivery_duration_min = route_info['duration_min']
+                order.total_amount = cart.total_amount + route_info['shipping_fee']
+                order.save()
+                
+                shipping_info = {
+                    'distance_km': round(route_info['distance_km'], 2),
+                    'duration_min': round(route_info['duration_min'], 0),
+                    'fee_breakdown': {
+                        'base_fee': 15000,
+                        'distance_fee': route_info['shipping_fee'] - 15000,
+                        'total': route_info['shipping_fee']
+                    }
+                }
+            else:
+                # Fallback: không tìm được farm, dùng phí cố định
+                order.delivery_fee = 30000
+                order.total_amount = cart.total_amount + 30000
+                order.save()
+                
+                shipping_info = {
+                    'distance_km': None,
+                    'duration_min': None,
+                    'fee_breakdown': {
+                        'base_fee': 30000,
+                        'distance_fee': 0,
+                        'total': 30000
+                    }
+                }
             
             # Create order items
             for cart_item in cart.items.all():
@@ -464,7 +514,8 @@ def create_order_api(request):
                 'success': True,
                 'order_id': order.id,
                 'message': 'Đặt hàng thành công!',
-                'total_amount': float(order.total_amount)
+                'total_amount': float(order.total_amount),
+                'shipping_info': shipping_info  # Include detailed shipping info
             })
             
         except Exception as e:
