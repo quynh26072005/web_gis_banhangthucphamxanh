@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1><i class="fas fa-credit-card"></i> {{ title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'food_store:home' %}">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'food_store:cart' %}">Giỏ hàng</a></li>
+                    <li class="breadcrumb-item active">Thanh toán</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Delivery Address Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> Địa chỉ giao hàng</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="deliveryAddress" class="form-label">Địa chỉ chi tiết</label>
+                        <textarea class="form-control" id="deliveryAddress" rows="3" placeholder="Nhập địa chỉ chi tiết (số nhà, tên đường, phường/xã, quận/huyện...)" required></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="selectedLat" class="form-label">Vĩ độ (tùy chọn)</label>
+                            <input type="number" class="form-control" id="selectedLat" placeholder="10.8231" step="any">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="selectedLng" class="form-label">Kinh độ (tùy chọn)</label>
+                            <input type="number" class="form-control" id="selectedLng" placeholder="106.6297" step="any">
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Lưu ý:</strong> Hiện tại chúng tôi giao hàng trong khu vực TP.HCM với phí giao hàng 30,000 VNĐ. 
+                        Tính năng bản đồ tương tác sẽ có sẵn sau khi cài đặt GDAL.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Order Notes -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-sticky-note"></i> Ghi chú đơn hàng</h5>
+                </div>
+                <div class="card-body">
+                    <textarea class="form-control" id="orderNotes" rows="3" placeholder="Ghi chú cho đơn hàng (tùy chọn)"></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Order Summary -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Tóm tắt đơn hàng</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6>Sản phẩm đã chọn:</h6>
+                        {% for item in cart.items.all %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <small>{{ item.product.name }}</small>
+                                <br>
+                                <small class="text-muted">{{ item.quantity }} x {{ item.product.price|floatformat:0 }} VNĐ</small>
+                            </div>
+                            <small class="fw-bold">{{ item.total_price|floatformat:0 }} VNĐ</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Tổng tiền hàng:</span>
+                        <span>{{ cart.total_amount|floatformat:0 }} VNĐ</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Phí giao hàng:</span>
+                        <span id="deliveryFee">30,000 VNĐ</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3">
+                        <strong>Tổng thanh toán:</strong>
+                        <strong id="totalAmount">{{ cart.total_amount|add:30000|floatformat:0 }} VNĐ</strong>
+                    </div>
+                    
+                    <button class="btn btn-success w-100" id="placeOrderBtn">
+                        <i class="fas fa-check"></i> Đặt hàng
+                    </button>
+                    
+                    <div class="text-center mt-3">
+                        <a href="{% url 'food_store:cart' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Quay lại giỏ hàng
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Place order
+document.getElementById('placeOrderBtn').addEventListener('click', function() {
+    const deliveryAddress = document.getElementById('deliveryAddress').value.trim();
+    if (!deliveryAddress) {
+        alert('Vui lòng nhập địa chỉ giao hàng');
+        return;
+    }
+    
+    const selectedLat = document.getElementById('selectedLat').value || 10.8231;
+    const selectedLng = document.getElementById('selectedLng').value || 106.6297;
+    const orderNotes = document.getElementById('orderNotes').value.trim();
+    
+    // Disable button and show loading
+    this.disabled = true;
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+    
+    fetch('{% url "food_store:create_order_api" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            latitude: parseFloat(selectedLat),
+            longitude: parseFloat(selectedLng),
+            delivery_address: deliveryAddress,
+            notes: orderNotes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Redirect to success page
+            window.location.href = '{% url "food_store:order_success" 0 %}'.replace('0', data.order_id);
+        } else {
+            alert('Có lỗi xảy ra: ' + data.error);
+            // Re-enable button
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-check"></i> Đặt hàng';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi đặt hàng');
+        // Re-enable button
+        this.disabled = false;
+        this.innerHTML = '<i class="fas fa-check"></i> Đặt hàng';
+    });
+});
+</script>
+{% endblock %}

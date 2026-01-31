@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="bg-success text-white py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold">Thực phẩm Sạch</h1>
+                <p class="lead">Kết nối bạn với các trang trại sạch thông qua công nghệ GIS</p>
+                <p>Tìm hiểu nguồn gốc, vị trí trang trại và theo dõi hành trình từ trang trại đến bàn ăn của bạn.</p>
+                <div class="mt-4">
+                    <a href="{% url 'food_store:product_list' %}" class="btn btn-light btn-lg me-3">
+                        <i class="fas fa-shopping-cart"></i> Mua sắm ngay
+                    </a>
+                    <a href="{% url 'gis_tools:farms_map' %}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-map"></i> Xem bản đồ trang trại
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                    class="img-fluid rounded" alt="Thực phẩm sạch">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row text-center mb-5">
+            <div class="col">
+                <h2>Tại sao chọn chúng tôi?</h2>
+                <p class="text-muted">Công nghệ GIS giúp bạn hiểu rõ hơn về thực phẩm</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="text-center">
+                    <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                        style="width: 80px; height: 80px;">
+                        <i class="fas fa-map-marker-alt fa-2x"></i>
+                    </div>
+                    <h4>Theo dõi nguồn gốc</h4>
+                    <p>Biết chính xác vị trí trang trại và hành trình của sản phẩm đến tay bạn.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="text-center">
+                    <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                        style="width: 80px; height: 80px;">
+                        <i class="fas fa-leaf fa-2x"></i>
+                    </div>
+                    <h4>Thực phẩm sạch</h4>
+                    <p>Tất cả sản phẩm đều từ các trang trại được chứng nhận sạch và hữu cơ.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="text-center">
+                    <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                        style="width: 80px; height: 80px;">
+                        <i class="fas fa-truck fa-2x"></i>
+                    </div>
+                    <h4>Giao hàng thông minh</h4>
+                    <p>Hệ thống GIS tối ưu tuyến đường giao hàng, đảm bảo tươi ngon.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Products -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col">
+                <h2>Sản phẩm nổi bật</h2>
+                <p class="text-muted">Những sản phẩm tươi ngon từ các trang trại uy tín</p>
+            </div>
+        </div>
+        <div class="row">
+            {% for product in featured_products %}
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card h-100">
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                    {% else %}
+                    <img src="https://images.unsplash.com/photo-1506976785307-8732e854ad03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"
+                        class="card-img-top" alt="{{ product.name }}">
+                    {% endif %}
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ product.name }}</h5>
+                        <p class="card-text text-muted small">
+                            <i class="fas fa-map-marker-alt"></i> {{ product.farm.name }}
+                        </p>
+                        <p class="card-text flex-grow-1">{{ product.description|truncatewords:15 }}</p>
+                        <div class="mt-auto">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="h5 text-success mb-0">{{ product.price|floatformat:0 }}đ/{{ product.unit
+                                    }}</span>
+                                <a href="{% url 'food_store:product_detail' product.pk %}"
+                                    class="btn btn-sm btn-outline-success">
+                                    Xem chi tiết
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <p class="text-center text-muted">Chưa có sản phẩm nào.</p>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center">
+            <a href="{% url 'food_store:product_list' %}" class="btn btn-success">
+                Xem tất cả sản phẩm <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Categories -->
+<section class="py-5">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col">
+                <h2>Danh mục sản phẩm</h2>
+                <p class="text-muted">Khám phá các loại thực phẩm sạch</p>
+            </div>
+        </div>
+        <div class="row">
+            {% for category in categories %}
+            <div class="col-lg-2 col-md-4 col-6 mb-4">
+                <div class="text-center">
+                    <a href="{% url 'food_store:product_list' %}?category={{ category.pk }}"
+                        class="text-decoration-none">
+                        {% if category.image %}
+                        <img src="{{ category.image.url }}" class="rounded-circle mb-2"
+                            style="width: 80px; height: 80px; object-fit: cover;" alt="{{ category.name }}">
+                        {% else %}
+                        <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
+                            style="width: 80px; height: 80px;">
+                            <i class="fas fa-apple-alt fa-2x"></i>
+                        </div>
+                        {% endif %}
+                        <h6 class="text-dark">{{ category.name }}</h6>
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <p class="text-center text-muted">Chưa có danh mục nào.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Farms -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col">
+                <h2>Trang trại đối tác</h2>
+                <p class="text-muted">Những trang trại uy tín cung cấp thực phẩm sạch</p>
+            </div>
+        </div>
+        <div class="row">
+            {% for farm in farms %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center me-3"
+                                style="width: 50px; height: 50px;">
+                                <i class="fas fa-{% if farm.organic_certified %}leaf{% else %}home{% endif %}"></i>
+                            </div>
+                            <div>
+                                <h5 class="card-title mb-0">{{ farm.name }}</h5>
+                                {% if farm.organic_certified %}
+                                <small class="text-success"><i class="fas fa-certificate"></i> Chứng nhận hữu cơ</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <p class="card-text">{{ farm.description|truncatewords:20 }}</p>
+                        <p class="card-text small text-muted">
+                            <i class="fas fa-map-marker-alt"></i> {{ farm.address }}
+                        </p>
+                        <a href="{% url 'food_store:farm_detail' farm.pk %}" class="btn btn-outline-success btn-sm">
+                            Xem chi tiết
+                        </a>
+                        {% if farm.latitude and farm.longitude %}
+                        <a href="{% url 'food_store:farm_detail' farm.pk %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-map"></i> Xem trên bản đồ
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <p class="text-center text-muted">Chưa có trang trại nào.</p>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center">
+            <a href="{% url 'food_store:farm_list' %}" class="btn btn-success">
+                Xem tất cả trang trại <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h2>Công cụ GIS</h2>
+                <p class="lead">Khám phá các tính năng GIS độc đáo của chúng tôi</p>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Bản đồ trang trại tương tác</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Khu vực giao hàng thông minh</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Theo dõi đơn hàng trên bản đồ</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Phân tích dữ liệu địa lý</li>
+                </ul>
+                <a href="{% url 'gis_tools:home' %}" class="btn btn-primary">
+                    <i class="fas fa-map"></i> Khám phá GIS Tools
+                </a>
+            </div>
+            <div class="col-lg-6">
+                <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                    class="img-fluid rounded" alt="GIS Tools">
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
