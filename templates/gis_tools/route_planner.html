@@ -1,0 +1,262 @@
+{% extends 'gis_tools/gis_base.html' %}
+{% load static %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Lập kế hoạch tuyến đường</li>
+{% endblock %}
+
+{% block gis_content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0"><i class="fas fa-route"></i> Lập kế hoạch Tuyến đường Giao hàng</h3>
+            </div>
+            <div class="card-body">
+                <p class="lead">Tối ưu hóa tuyến đường giao hàng với thuật toán Nearest Neighbor</p>
+
+                <!-- Starting Point -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <h5><i class="fas fa-flag-checkered text-success"></i> Điểm xuất phát</h5>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label>Vĩ độ (Latitude)</label>
+                        <input type="number" class="form-control" id="startLat" placeholder="10.8231" step="any"
+                            value="10.8231">
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label>Kinh độ (Longitude)</label>
+                        <input type="number" class="form-control" id="startLng" placeholder="106.6297" step="any"
+                            value="106.6297">
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Delivery Points -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <h5><i class="fas fa-map-pin text-danger"></i> Điểm giao hàng</h5>
+                        <p class="text-muted">Thêm ít nhất 2 điểm giao hàng để tối ưu tuyến đường</p>
+                    </div>
+                </div>
+
+                <div id="deliveryPoints">
+                    <!-- Delivery point 1 -->
+                    <div class="delivery-point row mb-2">
+                        <div class="col-md-5">
+                            <input type="number" class="form-control point-lat" placeholder="Vĩ độ" step="any"
+                                value="10.7769">
+                        </div>
+                        <div class="col-md-5">
+                            <input type="number" class="form-control point-lng" placeholder="Kinh độ" step="any"
+                                value="106.7009">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-danger btn-remove-point w-100" onclick="removePoint(this)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-outline-primary" onclick="addDeliveryPoint()">
+                    <i class="fas fa-plus"></i> Thêm điểm giao hàng
+                </button>
+
+                <hr>
+
+                <!-- Actions -->
+                <div class="text-center">
+                    <button class="btn btn-success btn-lg" onclick="optimizeRoute()">
+                        <i class="fas fa-route"></i> Tối ưu hóa tuyến đường
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results -->
+<div class="row" id="resultsSection" style="display: none;">
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-map"></i> Bản đồ tuyến đường</h5>
+            </div>
+            <div class="card-body p-0">
+                <div id="routeMap" style="height: 500px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-list-ol"></i> Kết quả tối ưu</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6>Tổng quãng đường:</h6>
+                    <h3 class="text-primary" id="totalDistance">- km</h3>
+                </div>
+                <div class="mb-3">
+                    <h6>Số điểm dừng:</h6>
+                    <h3 class="text-success" id="numStops">-</h3>
+                </div>
+                <div class="mb-3">
+                    <h6>Thời gian ước tính:</h6>
+                    <p class="text-muted" id="estimatedTime">~ - phút</p>
+                </div>
+
+                <hr>
+
+                <h6>Thứ tự giao hàng:</h6>
+                <div id="routeOrder" class="route-steps">
+                    <!-- Will be populated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let pointCounter = 1;
+
+    function addDeliveryPoint() {
+        pointCounter++;
+        const html = `
+        <div class="delivery-point row mb-2">
+            <div class="col-md-5">
+                <input type="number" class="form-control point-lat" placeholder="Vĩ độ" step="any">
+            </div>
+            <div class="col-md-5">
+                <input type="number" class="form-control point-lng" placeholder="Kinh độ" step="any">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-danger btn-remove-point w-100" onclick="removePoint(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+        document.getElementById('deliveryPoints').insertAdjacentHTML('beforeend', html);
+    }
+
+    function removePoint(button) {
+        button.closest('.delivery-point').remove();
+        pointCounter--;
+    }
+
+    function optimizeRoute() {
+        const startLat = parseFloat(document.getElementById('startLat').value);
+        const startLng = parseFloat(document.getElementById('startLng').value);
+
+        const points = [];
+        const deliveryPointElements = document.querySelectorAll('.delivery-point');
+
+        deliveryPointElements.forEach((el, index) => {
+            const lat = parseFloat(el.querySelector('.point-lat').value);
+            const lng = parseFloat(el.querySelector('.point-lng').value);
+
+            if (lat && lng) {
+                points.push({
+                    id: index + 1,
+                    lat: lat,
+                    lng: lng,
+                    address: `Điểm ${index + 1}`
+                });
+            }
+        });
+
+        if (points.length < 2) {
+            alert('Vui lòng thêm ít nhất 2 điểm giao hàng!');
+            return;
+        }
+
+        // Call API
+        fetch('/gis/api/optimize-route/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                start_lat: startLat,
+                start_lng: startLng,
+                delivery_points: points
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayResults(data.result, startLat, startLng);
+                } else {
+                    alert('Lỗi: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi tối ưu tuyến đường');
+            });
+    }
+
+    function displayResults(result, startLat, startLng) {
+        // Show results section
+        document.getElementById('resultsSection').style.display = 'flex';
+
+        // Update stats
+        document.getElementById('totalDistance').textContent = result.total_distance + ' km';
+        document.getElementById('numStops').textContent = result.num_stops;
+        const estimatedMinutes = Math.ceil(result.total_distance * 2); // ~2 min per km
+        document.getElementById('estimatedTime').textContent = `~ ${estimatedMinutes} phút`;
+
+        // Display route order
+        let routeHTML = `
+        <div class="route-step">
+            <i class="fas fa-flag-checkered text-success"></i> 
+            <strong>Xuất phát</strong>
+        </div>
+    `;
+
+        result.route.forEach((point, index) => {
+            routeHTML += `
+            <div class="route-step">
+                <i class="fas fa-arrow-down text-muted"></i> ${point.distance_from_previous.toFixed(2)} km
+            </div>
+            <div class="route-step">
+                <i class="fas fa-map-pin text-danger"></i> 
+                <strong>Điểm ${index + 1}</strong> (${point.cumulative_distance.toFixed(2)} km tích lũy)
+            </div>
+        `;
+        });
+
+        document.getElementById('routeOrder').innerHTML = routeHTML;
+
+        // Create map (simplified - would need actual Leaflet.js integration)
+        document.getElementById('routeMap').innerHTML = `
+        <div class="alert alert-info m-4">
+            <h5><i class="fas fa-info-circle"></i> Bản đồ tuyến đường</h5>
+            <p>Đã tối ưu ${result.num_stops} điểm giao hàng với tổng quãng đường ${result.total_distance} km</p>
+            <p class="mb-0"<small>Tích hợp Leaflet.js để hiển thị bản đồ tương tác với đường nối các điểm</small></p>
+        </div>
+    `;
+
+        // Scroll to results
+        document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+    }
+</script>
+
+<style>
+    .route-steps {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .route-step {
+        padding: 5px 0;
+    }
+</style>
+{% endblock %}

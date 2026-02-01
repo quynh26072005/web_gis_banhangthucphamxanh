@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1><i class="fas fa-shopping-cart"></i> {{ title }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'food_store:home' %}">Trang chủ</a></li>
+                    <li class="breadcrumb-item active">Giỏ hàng</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    {% if cart.items.exists %}
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Sản phẩm trong giỏ hàng</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in cart.items.all %}
+                    <div class="row align-items-center border-bottom py-3" id="cart-item-{{ item.id }}">
+                        <div class="col-md-2">
+                            {% if item.product.image %}
+                                <img src="{{ item.product.image.url }}" class="img-fluid rounded" alt="{{ item.product.name }}">
+                            {% else %}
+                                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 80px;">
+                                    <i class="fas fa-image text-muted"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="mb-1">{{ item.product.name }}</h6>
+                            <small class="text-muted">{{ item.product.farm.name }}</small>
+                            <br>
+                            <small class="text-success">{{ item.product.price|floatformat:0 }} VNĐ/{{ item.product.unit }}</small>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <button class="btn btn-outline-secondary" type="button" onclick="updateQuantity({{ item.id }}, {{ item.quantity }} - 1)">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <input type="number" class="form-control text-center" value="{{ item.quantity }}" min="1" id="quantity-{{ item.id }}" onchange="updateQuantity({{ item.id }}, this.value)">
+                                <button class="btn btn-outline-secondary" type="button" onclick="updateQuantity({{ item.id }}, {{ item.quantity }} + 1)">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <strong>{{ item.total_price|floatformat:0 }} VNĐ</strong>
+                        </div>
+                        <div class="col-md-1 text-end">
+                            <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart({{ item.id }})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Tóm tắt đơn hàng</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Tổng sản phẩm:</span>
+                        <span id="cart-total-items">{{ cart.total_items }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Tổng tiền hàng:</span>
+                        <strong id="cart-total-amount">{{ cart.total_amount|floatformat:0 }} VNĐ</strong>
+                    </div>
+                    <hr>
+                    <p class="text-muted small">
+                        <i class="fas fa-info-circle"></i> 
+                        Phí giao hàng sẽ được tính khi bạn chọn địa chỉ giao hàng
+                    </p>
+                    <a href="{% url 'food_store:checkout' %}" class="btn btn-success w-100">
+                        <i class="fas fa-credit-card"></i> Tiến hành thanh toán
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-body text-center">
+                    <a href="{% url 'food_store:product_list' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Tiếp tục mua sắm
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-shopping-cart fa-5x text-muted mb-3"></i>
+            <h3>Giỏ hàng của bạn đang trống</h3>
+            <p class="text-muted">Hãy thêm một số sản phẩm vào giỏ hàng để tiếp tục</p>
+            <a href="{% url 'food_store:product_list' %}" class="btn btn-primary">
+                <i class="fas fa-shopping-bag"></i> Mua sắm ngay
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateQuantity(itemId, newQuantity) {
+    if (newQuantity < 1) {
+        if (confirm('Bạn có muốn xóa sản phẩm này khỏi giỏ hàng?')) {
+            removeFromCart(itemId);
+        }
+        return;
+    }
+    
+    fetch('{% url "food_store:update_cart_item_api" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            item_id: itemId,
+            quantity: parseInt(newQuantity)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update UI
+            document.getElementById('cart-total-items').textContent = data.cart_total_items;
+            document.getElementById('cart-total-amount').textContent = data.cart_total_amount.toLocaleString() + ' VNĐ';
+            
+            // Update quantity input
+            document.getElementById('quantity-' + itemId).value = newQuantity;
+            
+            // Recalculate item total (you might want to reload the page for simplicity)
+            location.reload();
+        } else {
+            alert('Có lỗi xảy ra: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi cập nhật giỏ hàng');
+    });
+}
+
+function removeFromCart(itemId) {
+    if (!confirm('Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?')) {
+        return;
+    }
+    
+    fetch('{% url "food_store:remove_from_cart_api" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            item_id: itemId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove item from UI
+            document.getElementById('cart-item-' + itemId).remove();
+            
+            // Update totals
+            document.getElementById('cart-total-items').textContent = data.cart_total_items;
+            document.getElementById('cart-total-amount').textContent = data.cart_total_amount.toLocaleString() + ' VNĐ';
+            
+            // If cart is empty, reload page to show empty state
+            if (data.cart_total_items === 0) {
+                location.reload();
+            }
+        } else {
+            alert('Có lỗi xảy ra: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi xóa sản phẩm');
+    });
+}
+</script>
+{% endblock %}
