@@ -1,0 +1,838 @@
+/* ====================================
+   Clean & Simple Admin Interface
+   Minimal Design for Maximum Readability
+   ==================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ====================================
+   BASE STYLES
+   ==================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    background: #fafafa !important;
+    color: #2d3748 !important;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* ====================================
+   HEADER & BRANDING
+   ==================================== */
+
+#header {
+    background: #2563eb !important;
+    color: white !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+#header a:link,
+#header a:visited {
+    color: white !important;
+}
+
+.admin-branding {
+    background: #2563eb;
+    padding: 16px 24px;
+    border-bottom: none;
+}
+
+.admin-branding h1 a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: white !important;
+}
+
+.brand-icon {
+    font-size: 1.8em;
+}
+
+.brand-text {
+    font-size: 1.4em;
+    font-weight: 700;
+    color: white !important;
+}
+
+.brand-subtitle {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.85em;
+    margin-top: 2px;
+    font-weight: 400;
+}
+
+/* ====================================
+   SIDEBAR
+   ==================================== */
+
+#nav-sidebar {
+    background: #ffffff !important;
+    border-right: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+}
+
+#nav-sidebar .module th,
+#nav-sidebar .module caption {
+    background: #f7fafc !important;
+    color: #1a202c !important;
+    padding: 10px 16px !important;
+    font-weight: 600 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    font-size: 0.8em !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+#nav-sidebar a {
+    color: #4a5568 !important;
+    padding: 8px 16px !important;
+    display: block !important;
+    border-radius: 4px !important;
+    margin: 2px 8px !important;
+    font-weight: 500 !important;
+    transition: all 0.15s ease !important;
+    font-size: 0.9em !important;
+}
+
+#nav-sidebar a:hover {
+    background: #edf2f7 !important;
+    color: #2563eb !important;
+    padding-left: 20px !important;
+}
+
+#nav-sidebar .current-app,
+#nav-sidebar .current-model {
+    background: #ebf4ff !important;
+}
+
+#nav-sidebar .current-app a,
+#nav-sidebar .current-model a {
+    background: #ebf4ff !important;
+    color: #2563eb !important;
+    font-weight: 600 !important;
+}
+
+/* ====================================
+   BREADCRUMBS
+   ==================================== */
+
+.breadcrumbs {
+    background: #ffffff !important;
+    padding: 10px 20px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    color: #718096 !important;
+    font-size: 0.9em !important;
+}
+
+.breadcrumbs a {
+    color: #2563eb !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+}
+
+.breadcrumbs a:hover {
+    text-decoration: underline !important;
+}
+
+/* ====================================
+   MAIN CONTENT
+   ==================================== */
+
+#content {
+    background: #fafafa !important;
+}
+
+#content-main {
+    padding: 20px !important;
+}
+
+.module {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    margin-bottom: 20px !important;
+    overflow: hidden !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.module h2,
+.module caption {
+    background: #f7fafc !important;
+    color: #1a202c !important;
+    padding: 12px 16px !important;
+    font-weight: 600 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    font-size: 1em !important;
+}
+
+/* ====================================
+   TABLES
+   ==================================== */
+
+table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    background: white !important;
+}
+
+thead th {
+    background: #f7fafc !important;
+    color: #2d3748 !important;
+    padding: 12px 16px !important;
+    font-weight: 600 !important;
+    text-align: left !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    font-size: 0.85em !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.3px !important;
+}
+
+tbody tr {
+    background: white !important;
+    border-bottom: 1px solid #f7fafc !important;
+    transition: background 0.15s ease !important;
+}
+
+tbody tr:nth-child(even) {
+    background: #fafafa !important;
+}
+
+tbody tr:hover {
+    background: #f0f9ff !important;
+}
+
+tbody td {
+    padding: 12px 16px !important;
+    color: #2d3748 !important;
+    font-size: 0.9em !important;
+}
+
+tbody td a {
+    color: #2563eb !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+}
+
+tbody td a:hover {
+    text-decoration: underline !important;
+}
+
+/* ====================================
+   FORMS
+   ==================================== */
+
+.form-row {
+    background: white !important;
+    padding: 14px !important;
+    margin-bottom: 10px !important;
+    border-radius: 4px !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.form-row label {
+    color: #2d3748 !important;
+    font-weight: 600 !important;
+    font-size: 0.9em !important;
+    margin-bottom: 6px !important;
+    display: block !important;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="url"],
+input[type="date"],
+input[type="time"],
+input[type="tel"],
+textarea,
+select {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e0 !important;
+    border-radius: 4px !important;
+    padding: 8px 12px !important;
+    font-family: 'Inter', sans-serif !important;
+    color: #2d3748 !important;
+    font-size: 0.9em !important;
+    transition: border-color 0.15s ease !important;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+input[type="url"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="tel"]:focus,
+textarea:focus,
+select:focus {
+    border-color: #2563eb !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+/* ====================================
+   BUTTONS
+   ==================================== */
+
+.button,
+input[type=submit],
+input[type=button],
+.submit-row input,
+button[type=submit] {
+    background: #2563eb !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 16px !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    font-size: 0.9em !important;
+    transition: background 0.15s ease !important;
+}
+
+.button:hover,
+input[type=submit]:hover,
+input[type=button]:hover,
+.submit-row input:hover,
+button[type=submit]:hover {
+    background: #1d4ed8 !important;
+}
+
+.button.default,
+input[type=submit].default {
+    background: #2563eb !important;
+}
+
+.deletelink,
+.deletelink-box {
+    background: #dc2626 !important;
+    color: white !important;
+}
+
+.deletelink:hover,
+.deletelink-box:hover {
+    background: #b91c1c !important;
+}
+
+/* ====================================
+   SEARCH & FILTERS
+   ==================================== */
+
+#changelist {
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+#changelist .results {
+    background: white !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    overflow: hidden !important;
+}
+
+#changelist-search {
+    background: white !important;
+    padding: 14px !important;
+    border-radius: 6px !important;
+    margin-bottom: 16px !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+#searchbar {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e0 !important;
+    border-radius: 4px !important;
+    padding: 8px 12px !important;
+    color: #2d3748 !important;
+    width: 100% !important;
+}
+
+#searchbar:focus {
+    border-color: #2563eb !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+#changelist-filter {
+    background: white !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    padding: 14px !important;
+}
+
+#changelist-filter h2,
+#changelist-filter h3 {
+    background: transparent !important;
+    color: #1a202c !important;
+    font-weight: 600 !important;
+    padding: 8px 0 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    margin-bottom: 8px !important;
+    font-size: 0.9em !important;
+}
+
+#changelist-filter li {
+    background: transparent !important;
+    color: #4a5568 !important;
+    padding: 4px 0 !important;
+}
+
+#changelist-filter a {
+    color: #2563eb !important;
+    text-decoration: none !important;
+}
+
+#changelist-filter a:hover {
+    text-decoration: underline !important;
+}
+
+/* ====================================
+   ACTIONS
+   ==================================== */
+
+.actions {
+    background: white !important;
+    padding: 12px 14px !important;
+    border-radius: 6px !important;
+    margin-bottom: 16px !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.actions label {
+    color: #2d3748 !important;
+    font-weight: 600 !important;
+    margin-right: 10px !important;
+    font-size: 0.9em !important;
+}
+
+.actions select {
+    background: #ffffff !important;
+    padding: 6px 10px !important;
+    border-radius: 4px !important;
+    border: 1px solid #cbd5e0 !important;
+    color: #2d3748 !important;
+    font-size: 0.9em !important;
+}
+
+.actions button,
+.actions input[type="submit"] {
+    background: #2563eb !important;
+    color: white !important;
+    border: none !important;
+    padding: 6px 14px !important;
+    border-radius: 4px !important;
+    margin-left: 8px !important;
+    cursor: pointer !important;
+    font-weight: 600 !important;
+    font-size: 0.9em !important;
+}
+
+.actions button:hover,
+.actions input[type="submit"]:hover {
+    background: #1d4ed8 !important;
+}
+
+.actions span {
+    color: #718096 !important;
+    font-size: 0.9em !important;
+}
+
+/* ====================================
+   PAGINATION
+   ==================================== */
+
+.paginator {
+    padding: 14px !important;
+    text-align: center !important;
+    background: white !important;
+    border-radius: 6px !important;
+    margin-top: 16px !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.paginator a,
+.paginator span {
+    display: inline-block !important;
+    padding: 6px 10px !important;
+    margin: 0 2px !important;
+    border-radius: 4px !important;
+    font-size: 0.9em !important;
+}
+
+.paginator a {
+    background: #f7fafc !important;
+    color: #2563eb !important;
+    text-decoration: none !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.paginator a:hover {
+    background: #2563eb !important;
+    color: white !important;
+}
+
+.paginator .this-page {
+    background: #2563eb !important;
+    color: white !important;
+    font-weight: 600 !important;
+}
+
+/* ====================================
+   MESSAGES
+   ==================================== */
+
+.messagelist {
+    margin: 20px !important;
+    padding: 0 !important;
+    list-style: none !important;
+}
+
+.messagelist li {
+    padding: 12px 16px !important;
+    margin-bottom: 10px !important;
+    border-radius: 4px !important;
+    font-weight: 500 !important;
+    font-size: 0.9em !important;
+}
+
+.messagelist .success {
+    background: #d1fae5 !important;
+    color: #065f46 !important;
+    border-left: 3px solid #10b981 !important;
+}
+
+.messagelist .warning {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+    border-left: 3px solid #f59e0b !important;
+}
+
+.messagelist .error {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    border-left: 3px solid #ef4444 !important;
+}
+
+/* ====================================
+   FIELDSETS & INLINE
+   ==================================== */
+
+fieldset.module {
+    background: white !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    padding: 16px !important;
+    margin-bottom: 16px !important;
+}
+
+fieldset.module h2 {
+    background: transparent !important;
+    color: #1a202c !important;
+    padding: 0 0 10px 0 !important;
+    border-bottom: 2px solid #2563eb !important;
+    margin-bottom: 14px !important;
+    font-weight: 600 !important;
+}
+
+.inline-group {
+    background: white !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    padding: 16px !important;
+    margin-bottom: 16px !important;
+}
+
+/* ====================================
+   SUBMIT ROW
+   ==================================== */
+
+.submit-row {
+    background: white !important;
+    padding: 14px 16px !important;
+    border-radius: 6px !important;
+    margin-top: 16px !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+/* ====================================
+   SCROLLBAR
+   ==================================== */
+
+::-webkit-scrollbar {
+    width: 8px !important;
+    height: 8px !important;
+}
+
+::-webkit-scrollbar-track {
+    background: #f7fafc !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e0 !important;
+    border-radius: 4px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0 !important;
+}
+
+/* ====================================
+   UTILITIES
+   ==================================== */
+
+a {
+    color: #2563eb !important;
+    transition: color 0.15s ease;
+}
+
+a:hover {
+    color: #1d4ed8 !important;
+}
+
+/* Clean up any extra spacing */
+.colM #content {
+    margin-left: 0 !important;
+}
+
+.colMS #content {
+    margin-left: 0 !important;
+}
+
+/* ====================================
+   FORCE OVERRIDE ALL DARK BACKGROUNDS
+   ==================================== */
+
+/* Override Django's default dark toolbar */
+#toolbar,
+.toolbar,
+div[class*="toolbar"] {
+    background: white !important;
+    color: #2d3748 !important;
+}
+
+/* Override all filter-related dark backgrounds */
+#changelist-filter,
+#changelist-filter ul,
+#changelist-filter li,
+#changelist-filter div {
+    background: white !important;
+    color: #2d3748 !important;
+}
+
+/* Override search form backgrounds */
+#changelist-search,
+#changelist-search form,
+#changelist-search div {
+    background: white !important;
+}
+
+/* Override action bar backgrounds */
+.actions,
+.actions form,
+.actions div,
+.actions span.action-counter,
+.actions span.clear,
+.actions span.question,
+.actions span.all,
+.actions span.action-counter {
+    background: white !important;
+    color: #2d3748 !important;
+}
+
+/* Override any remaining dark divs */
+#content-main>div,
+#changelist>div,
+.filtered #toolbar,
+.filtered .actions {
+    background: white !important;
+}
+
+/* Force all form backgrounds to be white */
+form,
+form div,
+form fieldset {
+    background: white !important;
+}
+
+/* Override Django's default .xfull class */
+.xfull {
+    background: white !important;
+}
+
+/* Override any dark panels */
+.panel,
+.module,
+.dashboard-module {
+    background: white !important;
+}
+
+/* Ensure all text is readable */
+#changelist-filter *,
+.actions *,
+#changelist-search *,
+#toolbar * {
+    color: #2d3748 !important;
+}
+
+/* Override link colors in these areas */
+#changelist-filter a,
+.actions a {
+    color: #2563eb !important;
+}
+
+/* Make sure selected items are visible */
+#changelist-filter li.selected,
+#changelist-filter li.selected a {
+    background: #ebf4ff !important;
+    color: #2563eb !important;
+    font-weight: 600 !important;
+}
+
+/* Override any remaining dark elements */
+div[style*="background"],
+div[style*="background-color"] {
+    background: white !important;
+}
+
+/* Specific Django admin classes that might have dark backgrounds */
+.object-tools,
+.object-tools li,
+.object-tools a {
+    background: white !important;
+    color: #2d3748 !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.object-tools a:hover {
+    background: #2563eb !important;
+    color: white !important;
+}
+
+/* Date hierarchy */
+.date-hierarchy,
+.date-hierarchy a {
+    background: white !important;
+    color: #2d3748 !important;
+}
+
+.date-hierarchy a:hover {
+    color: #2563eb !important;
+}
+
+/* Results area */
+.results,
+.results table,
+.results tbody,
+.results thead {
+    background: white !important;
+}
+
+/* Ensure no dark backgrounds on hover */
+tr:hover,
+tr:hover td {
+    background: #f0f9ff !important;
+}
+
+/* Calendar widget */
+.calendarbox,
+.calendar,
+.calendar table {
+    background: white !important;
+    color: #2d3748 !important;
+}
+
+/* Autocomplete */
+.select2-container,
+.select2-dropdown {
+    background: white !important;
+}
+
+/* Help text */
+.help,
+.helptext,
+p.help {
+    color: #718096 !important;
+    background: transparent !important;
+}
+
+/* Errors */
+.errornote,
+.errorlist {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+}
+
+/* Related widget wrapper */
+.related-widget-wrapper {
+    background: white !important;
+}
+
+/* Inline related objects */
+.inline-related,
+.inline-group,
+.tabular,
+.tabular tbody,
+.tabular thead {
+    background: white !important;
+}
+
+/* Grappelli/custom admin overrides */
+.grp-module,
+.grp-row,
+.grp-cell {
+    background: white !important;
+}
+
+/* Force white on all containers */
+.container,
+.container-fluid,
+.content,
+.main-content {
+    background: white !important;
+}
+
+/* Ensure proper text color everywhere */
+body,
+html,
+div,
+span,
+p,
+td,
+th,
+li,
+a,
+label,
+input,
+select,
+textarea {
+    color: #2d3748 !important;
+}
+
+/* But keep links blue */
+a,
+a:link,
+a:visited {
+    color: #2563eb !important;
+}
+
+a:hover {
+    color: #1d4ed8 !important;
+}
+
+/* Keep button text white */
+button,
+input[type="submit"],
+input[type="button"],
+.button {
+    color: white !important;
+}
