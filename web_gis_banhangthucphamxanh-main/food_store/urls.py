@@ -8,7 +8,7 @@ from . import views
 app_name = 'food_store'
 
 urlpatterns = [
-    # Main pages
+    # Main pages (Trang dành cho khách hàng)
     path('', views.home_view, name='home'),
     path('products/', views.product_list_view, name='product_list'),
     path('product/<int:pk>/', views.product_detail_view, name='product_detail'),
@@ -36,4 +36,10 @@ urlpatterns = [
     path('api/update-cart-item/', views.update_cart_item_api, name='update_cart_item_api'),
     path('api/remove-from-cart/', views.remove_from_cart_api, name='remove_from_cart_api'),
     path('api/create-order/', views.create_order_api, name='create_order_api'),
+
+    # --- QUẢN LÝ SẢN PHẨM (Đã đổi đường dẫn) ---
+    path('admin-shop/products/', views.manage_products, name='manage_products'),
+    path('admin-shop/products/add/', views.add_product, name='add_product'),
+    path('admin-shop/products/edit/<int:pk>/', views.edit_product, name='edit_product'), # Thêm trang sửa
+    path('admin-shop/products/delete/<int:pk>/', views.delete_product_api, name='delete_product_api'),
 ]

@@ -6,6 +6,7 @@ from django.contrib import admin
 from django.db import models # Needed for Aggregate
 from django.utils.html import mark_safe
 from django.urls import reverse
+from django.shortcuts import redirect
 from django.utils.translation import gettext_lazy as _
 from .models import Farm, Category, Product, Customer, Cart, CartItem, Order, OrderItem, DeliveryZone
 
@@ -67,8 +68,8 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    """Admin for Product model"""
-    # Thay price_display bằng price để hỗ trợ list_editable
+    """Admin for Product model - Đã hợp nhất và thêm chuyển hướng"""
+    # 1. Giữ nguyên cấu trúc hiển thị của bạn
     list_display = ['image_preview', 'name', 'category', 'farm', 'price', 'stock_quantity', 'is_available']
     list_filter = ['category', 'farm', 'is_available', 'created_at']
     search_fields = ['name', 'description']
@@ -89,13 +90,22 @@ class ProductAdmin(admin.ModelAdmin):
             'fields': ('created_at', 'updated_at')
         }),
     )
-    
+
+    # 2. Giữ nguyên hàm xem trước ảnh của bạn
     def image_preview(self, obj):
         if obj.image:
             return mark_safe(f'<img src="{obj.image.url}" width="60" height="60" style="object-fit:cover; border-radius: 4px;" />')
         return "No Image"
     image_preview.short_description = 'Ảnh'
 
+    # 3. THÊM CHUYỂN HƯỚNG: Khi bấm "Thêm vào" hoặc "Sửa" sẽ nhảy sang giao diện xanh lá (Hình 3)
+    def add_view(self, request, form_url='', extra_context=None):
+        """Chuyển hướng nút 'Thêm vào' sang giao diện custom"""
+        return redirect(reverse('food_store:add_product'))
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        """Chuyển hướng khi bấm vào tên sản phẩm sang giao diện custom"""
+        return redirect(reverse('food_store:edit_product', args=[object_id]))
 
 @admin.register(DeliveryZone)
 class DeliveryZoneAdmin(admin.ModelAdmin):

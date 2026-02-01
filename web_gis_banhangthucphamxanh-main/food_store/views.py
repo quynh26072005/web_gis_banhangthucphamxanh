@@ -10,6 +10,8 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 
+# Import ProductForm để không bị lỗi 'ProductForm' is not defined
+from .forms import ProductForm
 from .models import Product, Category, Farm, Customer, Cart, CartItem, Order, OrderItem, DeliveryZone
 from gis_tools.gis_functions import MapGenerator
 
@@ -208,26 +210,6 @@ def profile_view(request):
         'customer': customer,
     }
     return render(request, 'food_store/profile.html', context)
-
-
-@login_required
-def order_history_view(request):
-    """Lịch sử đơn hàng - tạm thời trống"""
-    context = {
-        'title': 'Lịch sử đơn hàng',
-        'page_obj': None,
-    }
-    return render(request, 'food_store/order_history.html', context)
-
-
-@login_required
-def order_detail_view(request, pk):
-    """Chi tiết đơn hàng - tạm thời trống"""
-    context = {
-        'title': f'Đơn hàng #{pk}',
-        'order': None,
-    }
-    return render(request, 'food_store/order_detail.html', context)
 
 
 def about_view(request):
@@ -534,3 +516,61 @@ def order_detail_view(request, pk):
     except Customer.DoesNotExist:
         messages.error(request, 'Không tìm thấy thông tin khách hàng')
         return redirect('food_store:home')
+
+# --- QUẢN LÝ SẢN PHẨM ---
+
+@login_required
+def manage_products(request):
+    """Trang liệt kê danh sách rau củ để quản lý"""
+    products = Product.objects.all().order_by('-id')
+    return render(request, 'food_store/manage_products.html', {
+        'title': 'Quản lý kho rau sạch',
+        'products': products
+    })
+
+@login_required
+def add_product(request):
+    """View thêm sản phẩm mới"""
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Đã thêm rau củ mới thành công!')
+            return redirect('food_store:manage_products')
+    else:
+        form = ProductForm()
+    
+    return render(request, 'food_store/product_form.html', {
+        'title': 'Thêm rau củ mới',
+        'form': form,
+        'edit_mode': False
+    })
+
+@login_required
+def edit_product(request, pk):
+    """View chỉnh sửa rau củ"""
+    product = get_object_or_404(Product, pk=pk)
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES, instance=product)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Cập nhật {product.name} thành công!')
+            return redirect('food_store:manage_products')
+    else:
+        form = ProductForm(instance=product)
+    
+    return render(request, 'food_store/product_form.html', {
+        'title': f'Sửa: {product.name}',
+        'form': form,
+        'edit_mode': True
+    })
+
+@login_required
+def delete_product_api(request, pk):
+    """API xóa sản phẩm nhanh"""
+    if request.method == 'POST':
+        product = get_object_or_404(Product, pk=pk)
+        product_name = product.name
+        product.delete()
+        return JsonResponse({'success': True, 'message': f'Đã xóa {product_name}'})
+    return JsonResponse({'success': False}, status=400)

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0 rounded-lg animate__animated animate__fadeInUp">
+                <div class="card-header bg-success text-white py-3">
+                    <h4 class="mb-0 text-center"><i class="fas fa-plus-circle me-2"></i>Thêm Rau Củ Mới</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-12 mb-3 font-weight-bold">{{ form.name.label_tag }} {{ form.name }}</div>
+                            <div class="col-md-6 mb-3">{{ form.category.label_tag }} {{ form.category }}</div>
+                            <div class="col-md-6 mb-3">{{ form.farm.label_tag }} {{ form.farm }}</div>
+                            <div class="col-md-4 mb-3">{{ form.price.label_tag }} {{ form.price }}</div>
+                            <div class="col-md-4 mb-3">{{ form.unit.label_tag }} {{ form.unit }}</div>
+                            <div class="col-md-4 mb-3">{{ form.stock.label_tag }} {{ form.stock }}</div>
+                            <div class="col-md-12 mb-3">{{ form.image.label_tag }} {{ form.image }}</div>
+                            <div class="col-md-12 mb-3">{{ form.description.label_tag }} {{ form.description }}</div>
+                            <div class="col-md-12 mb-3 form-check ms-3">{{ form.is_available }} {{ form.is_available.label_tag }}</div>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'food_store:manage_products' %}" class="btn btn-secondary px-4">Quay lại</a>
+                            <button type="submit" class="btn btn-success px-5 fw-bold">Lưu sản phẩm</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
