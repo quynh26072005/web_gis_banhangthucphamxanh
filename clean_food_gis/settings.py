@@ -72,15 +72,13 @@ if os.name == 'nt':  # Windows
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'web_gis',
+        'NAME': 'clean_food_gis_db',
         'USER': 'postgres',
-        'PASSWORD': '1',
-        'HOST': '127.0.0.1',
+        'PASSWORD': '26072005',
+        'HOST': 'localhost',
         'PORT': '5432',
     }
 }
-
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
