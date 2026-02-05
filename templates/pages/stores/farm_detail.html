@@ -1,0 +1,105 @@
+{% extends 'base/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center me-3"
+                            style="width: 60px; height: 60px;">
+                            <i class="fas fa-{% if store.organic_certified %}leaf{% else %}home{% endif %} fa-2x"></i>
+                        </div>
+                        <div>
+                            <h1 class="mb-0">{{ store.name }}</h1>
+                            {% if store.organic_certified %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-certificate"></i> Chứng nhận hữu cơ
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-info-circle text-success"></i> Thông tin cửa hàng</h5>
+                            <p><strong>Địa chỉ:</strong> {{ store.address }}</p>
+                            <p><strong>Điện thoại:</strong> {{ store.phone }}</p>
+                            {% if store.email %}
+                            <p><strong>Email:</strong> {{ store.email }}</p>
+                            {% endif %}
+                            {% if store.organic_certified and store.certification_number %}
+                            <p><strong>Số chứng nhận:</strong> {{ store.certification_number }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {% if store.latitude and store.longitude %}
+                            <h5><i class="fas fa-map-marker-alt text-success"></i> Vị trí</h5>
+                            <p><strong>Tọa độ:</strong> {{ store.latitude }}, {{ store.longitude }}</p>
+                            <div class="map-container border rounded overflow-hidden mb-3" style="height: 300px;">
+                                {% if map_html %}
+                                {{ map_html|safe }}
+                                {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Không thể tải bản đồ cho cửa hàng này.
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5><i class="fas fa-file-alt text-success"></i> Mô tả</h5>
+                        <p>{{ store.description }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-seedling"></i> Sản phẩm từ cửa hàng</h5>
+                </div>
+                <div class="card-body">
+                    {% if products %}
+                    {% for product in products %}
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="me-3">
+                            <div class="bg-light rounded p-2">
+                                <i class="fas fa-apple-alt text-success"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ product.name }}</h6>
+                            <p class="text-muted small mb-1">{{ product.description|truncatewords:10 }}</p>
+                            <p class="text-success mb-0">
+                                <strong>{{ product.price|floatformat:0 }}đ/{{ product.unit }}</strong>
+                            </p>
+                        </div>
+                        <div>
+                            <a href="{% url 'food_store:product_detail' product.pk %}"
+                                class="btn btn-sm btn-outline-success">
+                                Xem
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <div class="text-center mt-3">
+                        <a href="{% url 'food_store:product_list' %}?store={{ store.pk }}" class="btn btn-success">
+                            Xem tất cả sản phẩm
+                        </a>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">Chưa có sản phẩm nào từ cửa hàng này.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

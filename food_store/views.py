@@ -15,81 +15,107 @@ from gis_tools.gis_functions import MapGenerator
 
 
 def home_view(request):
-    """Trang chủ website"""
-    # Lấy sản phẩm nổi bật
+    """Homepage view"""
     featured_products = Product.objects.filter(is_available=True)[:8]
-    
-    # Lấy danh mục
     categories = Category.objects.all()[:6]
-    
-    # Lấy trang trại
-    farms = Farm.objects.all()[:6]
+    stores = Farm.objects.all()[:6]
     
     context = {
         'title': 'Trang chủ - Thực phẩm Sạch',
         'featured_products': featured_products,
         'categories': categories,
-        'farms': farms,
+        'stores': stores,
     }
-    return render(request, 'food_store/home.html', context)
+    return render(request, 'pages/home/home.html', context)
 
 
 def product_list_view(request):
-    """Danh sách sản phẩm"""
+    """Product list view - Fixed version"""
+    print(f"=== PRODUCT LIST VIEW FIXED ===")
+    print(f"Request path: {request.path}")
+    print(f"Request GET: {dict(request.GET)}")
+    
     products = Product.objects.filter(is_available=True)
+    print(f"Initial products: {products.count()}")
     
-    # Lọc theo danh mục
-    category_id = request.GET.get('category')
-    if category_id:
-        products = products.filter(category_id=category_id)
+    category_param = request.GET.get('category', '').strip()
+    store_param = request.GET.get('store', '').strip()
+    search_param = request.GET.get('search', '').strip()
+    sort_param = request.GET.get('sort', 'name').strip()
     
-    # Lọc theo trang trại
-    farm_id = request.GET.get('farm')
-    if farm_id:
-        products = products.filter(farm_id=farm_id)
+    print(f"Parameters: category='{category_param}', store='{store_param}', search='{search_param}'")
     
-    # Tìm kiếm
-    search_query = request.GET.get('search')
-    if search_query:
+    current_category = None
+    if category_param:
+        try:
+            current_category = int(category_param)
+            products = products.filter(category_id=current_category)
+            print(f"Applied category filter {current_category}: {products.count()} products")
+        except (ValueError, TypeError):
+            print(f"Invalid category: {category_param}")
+    
+    current_store = None
+    if store_param:
+        try:
+            current_store = int(store_param)
+            products = products.filter(farm_id=current_store)
+            print(f"Applied store filter {current_store}: {products.count()} products")
+        except (ValueError, TypeError):
+            print(f"Invalid store: {store_param}")
+    
+    current_search = None
+    if search_param:
+        current_search = search_param
         products = products.filter(
-            Q(name__icontains=search_query) |
-            Q(description__icontains=search_query)
+            Q(name__icontains=search_param) |
+            Q(description__icontains=search_param)
         )
+        print(f"Applied search filter '{search_param}': {products.count()} products")
     
-    # Sắp xếp
-    sort_by = request.GET.get('sort', 'name')
-    if sort_by == 'price_low':
+    if sort_param == 'price_low':
         products = products.order_by('price')
-    elif sort_by == 'price_high':
+    elif sort_param == 'price_high':
         products = products.order_by('-price')
-    elif sort_by == 'newest':
+    elif sort_param == 'newest':
         products = products.order_by('-created_at')
     else:
         products = products.order_by('name')
     
-    # Phân trang
+    print(f"Final products count: {products.count()}")
+    
+    for i, product in enumerate(products[:3]):
+        print(f"  {i+1}. {product.name} - {product.category.name} - {product.farm.name}")
+    
     paginator = Paginator(products, 12)
-    page_number = request.GET.get('page')
+    page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
     
     context = {
         'title': 'Sản phẩm',
         'page_obj': page_obj,
         'categories': Category.objects.all(),
-        'farms': Farm.objects.all(),
-        'current_category': category_id,
-        'current_farm': farm_id,
-        'search_query': search_query,
-        'sort_by': sort_by,
+        'stores': Farm.objects.all(),
+        'current_category': current_category,
+        'current_store': current_store,
+        'search_query': current_search,
+        'sort_by': sort_param,
     }
-    return render(request, 'food_store/product_list.html', context)
+    
+    print(f"Context: category={current_category}, store={current_store}, products={page_obj.paginator.count}")
+    
+    return render(request, 'pages/products/product_list.html', context)
+
+
+def simple_filter_view(request):
+    """Simple filter view - DEPRECATED, use product_list_view instead"""
+    from django.shortcuts import redirect
+    return redirect('food_store:product_list')
 
 
 def product_detail_view(request, pk):
-    """Chi tiết sản phẩm"""
+    """Product detail view"""
     product = get_object_or_404(Product, pk=pk, is_available=True)
     
-    # Sản phẩm liên quan (cùng danh mục)
     related_products = Product.objects.filter(
         category=product.category,
         is_available=True
@@ -100,30 +126,28 @@ def product_detail_view(request, pk):
         'product': product,
         'related_products': related_products,
     }
-    return render(request, 'food_store/product_detail.html', context)
+    return render(request, 'pages/products/product_detail.html', context)
 
 
 def category_list_view(request):
-    """Danh sách danh mục"""
+    """Category list view"""
     categories = Category.objects.all()
     
     context = {
         'title': 'Danh mục sản phẩm',
         'categories': categories,
     }
-    return render(request, 'food_store/category_list.html', context)
+    return render(request, 'pages/products/category_list.html', context)
 
 
 def farm_list_view(request):
-    """Danh sách trang trại"""
+    """Store list view"""
     farms = Farm.objects.all()
     
-    # Lọc theo chứng nhận hữu cơ
     organic_only = request.GET.get('organic')
     if organic_only:
         farms = farms.filter(organic_certified=True)
     
-    # Tìm kiếm
     search_query = request.GET.get('search')
     if search_query:
         farms = farms.filter(
@@ -132,28 +156,25 @@ def farm_list_view(request):
             Q(description__icontains=search_query)
         )
     
-    # Phân trang
-    paginator = Paginator(farms, 9)
+    paginator = Paginator(farms.order_by('name'), 9)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
     context = {
-        'title': 'Trang trại',
+        'title': 'Cửa hàng',
         'page_obj': page_obj,
         'organic_only': organic_only,
         'search_query': search_query,
     }
-    return render(request, 'food_store/farm_list.html', context)
+    return render(request, 'pages/stores/farm_list.html', context)
 
 
 def farm_detail_view(request, pk):
-    """Chi tiết trang trại"""
+    """Store detail view"""
     farm = get_object_or_404(Farm, pk=pk)
     
-    # Sản phẩm của trang trại
     products = farm.product_set.filter(is_available=True)
     
-    # Tạo bản đồ
     farm_map = MapGenerator.create_single_farm_map(farm)
     
     context = {
@@ -162,16 +183,15 @@ def farm_detail_view(request, pk):
         'products': products,
         'map_html': farm_map._repr_html_() if farm_map else None,
     }
-    return render(request, 'food_store/farm_detail.html', context)
+    return render(request, 'pages/stores/farm_detail.html', context)
 
 
 def register_view(request):
-    """Đăng ký tài khoản"""
+    """User registration view"""
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            # Tạo profile khách hàng
             Customer.objects.create(
                 user=user,
                 phone='',
@@ -187,16 +207,15 @@ def register_view(request):
         'title': 'Đăng ký',
         'form': form,
     }
-    return render(request, 'registration/register.html', context)
+    return render(request, 'auth/register.html', context)
 
 
 @login_required
 def profile_view(request):
-    """Trang cá nhân"""
+    """User profile view"""
     try:
         customer = request.user.customer
     except Customer.DoesNotExist:
-        # Tạo profile nếu chưa có
         customer = Customer.objects.create(
             user=request.user,
             phone='',
@@ -207,43 +226,43 @@ def profile_view(request):
         'title': 'Trang cá nhân',
         'customer': customer,
     }
-    return render(request, 'food_store/profile.html', context)
+    return render(request, 'pages/static_pages/profile.html', context)
 
 
 @login_required
 def order_history_view(request):
-    """Lịch sử đơn hàng - tạm thời trống"""
+    """Order history view - temporarily empty"""
     context = {
         'title': 'Lịch sử đơn hàng',
         'page_obj': None,
     }
-    return render(request, 'food_store/order_history.html', context)
+    return render(request, 'pages/orders/order_history.html', context)
 
 
 @login_required
 def order_detail_view(request, pk):
-    """Chi tiết đơn hàng - tạm thời trống"""
+    """Order detail view - temporarily empty"""
     context = {
         'title': f'Đơn hàng #{pk}',
         'order': None,
     }
-    return render(request, 'food_store/order_detail.html', context)
+    return render(request, 'pages/orders/order_detail.html', context)
 
 
 def about_view(request):
-    """Trang giới thiệu"""
+    """About page view"""
     context = {
         'title': 'Giới thiệu',
     }
-    return render(request, 'food_store/about.html', context)
+    return render(request, 'pages/static_pages/about.html', context)
 
 
 def contact_view(request):
-    """Trang liên hệ"""
+    """Contact page view"""
     context = {
         'title': 'Liên hệ',
     }
-    return render(request, 'food_store/contact.html', context)
+    return render(request, 'pages/static_pages/contact.html', context)
 
 
 # Cart Views
@@ -264,19 +283,19 @@ def get_or_create_cart(user):
 
 @login_required
 def cart_view(request):
-    """Hiển thị giỏ hàng"""
+    """Shopping cart view"""
     cart = get_or_create_cart(request.user)
     
     context = {
         'title': 'Giỏ hàng',
         'cart': cart,
     }
-    return render(request, 'food_store/cart.html', context)
+    return render(request, 'pages/orders/cart.html', context)
 
 
 @login_required
 def add_to_cart_api(request):
-    """API thêm sản phẩm vào giỏ hàng"""
+    """API to add product to cart"""
     if request.method == 'POST':
         try:
             import json
@@ -287,7 +306,6 @@ def add_to_cart_api(request):
             product = get_object_or_404(Product, pk=product_id, is_available=True)
             cart = get_or_create_cart(request.user)
             
-            # Check if item already in cart
             cart_item, created = CartItem.objects.get_or_create(
                 cart=cart,
                 product=product,
@@ -316,7 +334,7 @@ def add_to_cart_api(request):
 
 @login_required
 def update_cart_item_api(request):
-    """API cập nhật số lượng sản phẩm trong giỏ hàng"""
+    """API to update cart item quantity"""
     if request.method == 'POST':
         try:
             import json
@@ -353,7 +371,7 @@ def update_cart_item_api(request):
 
 @login_required
 def remove_from_cart_api(request):
-    """API xóa sản phẩm khỏi giỏ hàng"""
+    """API to remove product from cart"""
     if request.method == 'POST':
         try:
             import json
@@ -395,7 +413,7 @@ def checkout_view(request):
         'title': 'Thanh toán',
         'cart': cart,
     }
-    return render(request, 'food_store/checkout.html', context)
+    return render(request, 'pages/orders/checkout.html', context)
 
 
 @login_required
@@ -467,10 +485,11 @@ def create_order_api(request):
             
             if route_info:
                 # Cập nhật phí ship và routing info
-                order.delivery_fee = route_info['shipping_fee']
+                from decimal import Decimal
+                order.delivery_fee = Decimal(str(route_info['shipping_fee']))
                 order.delivery_distance_km = route_info['distance_km']
                 order.delivery_duration_min = route_info['duration_min']
-                order.total_amount = cart.total_amount + route_info['shipping_fee']
+                order.total_amount = cart.total_amount + Decimal(str(route_info['shipping_fee']))
                 order.save()
                 
                 shipping_info = {
@@ -536,7 +555,7 @@ def order_success_view(request, order_id):
         'title': 'Đặt hàng thành công',
         'order': order,
     }
-    return render(request, 'food_store/order_success.html', context)
+    return render(request, 'pages/orders/order_success.html', context)
 
 
 @login_required
@@ -555,14 +574,14 @@ def order_history_view(request):
             'title': 'Lịch sử đơn hàng',
             'page_obj': page_obj,
         }
-        return render(request, 'food_store/order_history.html', context)
+        return render(request, 'pages/orders/order_history.html', context)
         
     except Customer.DoesNotExist:
         context = {
             'title': 'Lịch sử đơn hàng',
             'page_obj': None,
         }
-        return render(request, 'food_store/order_history.html', context)
+        return render(request, 'pages/orders/order_history.html', context)
 
 
 @login_required
@@ -580,7 +599,7 @@ def order_detail_view(request, pk):
             'order': order,
             'map_html': tracking_map._repr_html_() if tracking_map else None,
         }
-        return render(request, 'food_store/order_detail.html', context)
+        return render(request, 'pages/orders/order_detail.html', context)
         
     except Customer.DoesNotExist:
         messages.error(request, 'Không tìm thấy thông tin khách hàng')

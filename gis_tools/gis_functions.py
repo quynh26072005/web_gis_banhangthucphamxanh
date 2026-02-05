@@ -32,19 +32,19 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 
 class FarmLocationAnalyzer:
     """
-    Công cụ phân tích vị trí trang trại
-    Tính toán khoảng cách, tìm trang trại gần nhất
+    Công cụ phân tích vị trí cửa hàng
+    Tính toán khoảng cách, tìm cửa hàng gần nhất
     """
     
     @staticmethod
-    def find_nearest_farms(latitude, longitude, max_distance_km=50, limit=10):
+    def find_nearest_farms(latitude, longitude, max_distance_km=99999, limit=50):
         """
-        Tìm các trang trại gần nhất từ vị trí khách hàng
+        Tìm các cửa hàng gần nhất từ vị trí khách hàng
         Args:
             latitude: Vĩ độ khách hàng
             longitude: Kinh độ khách hàng
-            max_distance_km: Khoảng cách tối đa (km)
-            limit: Số lượng trang trại tối đa trả về
+            max_distance_km: Khoảng cách tối đa (km) - mặc định không giới hạn
+            limit: Số lượng cửa hàng tối đa trả về
         """
         all_farms = Farm.objects.all()
         nearest_farms = []
@@ -52,7 +52,9 @@ class FarmLocationAnalyzer:
         for farm in all_farms:
             if farm.latitude is not None and farm.longitude is not None:
                 dist = calculate_distance(latitude, longitude, farm.latitude, farm.longitude)
-                if dist <= max_distance_km:
+                
+                # Nếu max_distance_km >= 99999, coi như không giới hạn
+                if max_distance_km >= 99999 or dist <= max_distance_km:
                     # Attach distance to farm object temporarily
                     farm.distance_km = dist 
                     nearest_farms.append(farm)
@@ -63,42 +65,47 @@ class FarmLocationAnalyzer:
         return nearest_farms[:limit]
     
     @staticmethod
-    def find_nearest_farms_by_road(latitude, longitude, max_distance_km=50, limit=10):
+    def find_nearest_farms_by_road(latitude, longitude, max_distance_km=99999, limit=50, vehicle_type='driving'):
         """
-        Tìm farm gần nhất theo ĐƯỜNG ĐI THỰC TẾ (road routing)
+        Tìm cửa hàng gần nhất theo ĐƯỜNG ĐI THỰC TẾ (road routing)
         
         Args:
             latitude: Vĩ độ khách hàng
             longitude: Kinh độ khách hàng
-            max_distance_km: Khoảng cách tối đa (km)
-            limit: Số lượng farm tối đa trả về
+            max_distance_km: Khoảng cách tối đa (km) - mặc định không giới hạn
+            limit: Số lượng cửa hàng tối đa trả về
+            vehicle_type: Loại phương tiện ('driving', 'motorcycle', 'bicycle', 'foot')
         
         Returns:
-            List of Farm objects với attributes:
+            List of Store objects với attributes:
                 - distance_km: Khoảng cách đường bộ (km)
                 - duration_min: Thời gian di chuyển (phút)
                 - route_geometry: GeoJSON LineString
-                - shipping_fee: Phí giao hàng (VNĐ)
+                - vehicle_type: Loại phương tiện
         """
-        from .routing import get_route_with_fee
+        from .routing import get_road_route
         
         all_farms = Farm.objects.all()
         farms_with_route = []
         
         for farm in all_farms:
             if farm.latitude and farm.longitude:
-                # Call routing API
-                route_info = get_route_with_fee(
+                # Call routing API để lấy route thực tế với vehicle type
+                route_info = get_road_route(
                     farm.latitude, farm.longitude,  # FROM farm
-                    latitude, longitude              # TO customer
+                    latitude, longitude,             # TO customer
+                    vehicle_type=vehicle_type
                 )
                 
-                if route_info and route_info['distance_km'] <= max_distance_km:
-                    # Attach route info to farm object
+                # Nếu max_distance_km >= 99999, coi như không giới hạn
+                distance_check = max_distance_km >= 99999 or (route_info and route_info['distance_km'] <= max_distance_km)
+                
+                if route_info and distance_check:
+                    # Attach route info to farm object (không tính phí ship)
                     farm.distance_km = route_info['distance_km']
                     farm.duration_min = route_info['duration_min']
                     farm.route_geometry = route_info['geometry']
-                    farm.shipping_fee = route_info['shipping_fee']
+                    farm.vehicle_type = route_info['vehicle_type']
                     farms_with_route.append(farm)
         
         # Sort by road distance
@@ -109,7 +116,7 @@ class FarmLocationAnalyzer:
     @staticmethod
     def calculate_farm_distance(farm_location, customer_location):
         """
-        Tính khoảng cách giữa trang trại và khách hàng
+        Tính khoảng cách giữa cửa hàng và khách hàng
         Args:
             farm_location: Tuple (lat, lng) hoặc object có .y, .x
             customer_location: Tuple (lat, lng) hoặc object có .y, .x
@@ -153,27 +160,85 @@ class DeliveryZoneManager:
     @staticmethod
     def get_all_delivery_zones_geojson():
         """
-        Tạo GeoJSON giả lập cho delivery zones vì không có PolygonField
+        Tạo GeoJSON cho delivery zones miền Nam Việt Nam
         """
         zones = DeliveryZone.objects.filter(is_active=True)
         features = []
         
-        # Define some static polygons for demo
-        demo_polygons = {
+        # Định nghĩa polygon cho các tỉnh/thành miền Nam (tọa độ thực tế)
+        south_vietnam_polygons = {
             'TP. Hồ Chí Minh': [[
-                [106.55, 10.65], [106.85, 10.65], 
-                [106.85, 10.95], [106.55, 10.95], [106.55, 10.65]
+                [106.4, 10.5], [106.9, 10.5], [106.9, 11.0], [106.4, 11.0], [106.4, 10.5]
             ]],
-            'Hà Nội': [[
-                [105.75, 20.95], [105.95, 20.95], 
-                [105.95, 21.15], [105.75, 21.15], [105.75, 20.95]
+            'Bình Dương': [[
+                [106.5, 11.0], [107.0, 11.0], [107.0, 11.4], [106.5, 11.4], [106.5, 11.0]
+            ]],
+            'Đồng Nai': [[
+                [106.8, 10.8], [107.6, 10.8], [107.6, 11.5], [106.8, 11.5], [106.8, 10.8]
+            ]],
+            'Bà Rịa - Vũng Tàu': [[
+                [106.8, 10.1], [107.4, 10.1], [107.4, 10.7], [106.8, 10.7], [106.8, 10.1]
+            ]],
+            'Long An': [[
+                [105.9, 10.4], [106.6, 10.4], [106.6, 11.0], [105.9, 11.0], [105.9, 10.4]
+            ]],
+            'Tây Ninh': [[
+                [105.8, 11.0], [106.5, 11.0], [106.5, 11.7], [105.8, 11.7], [105.8, 11.0]
+            ]],
+            'Tiền Giang': [[
+                [105.9, 10.1], [106.6, 10.1], [106.6, 10.6], [105.9, 10.6], [105.9, 10.1]
+            ]],
+            'Bến Tre': [[
+                [106.0, 9.9], [106.7, 9.9], [106.7, 10.4], [106.0, 10.4], [106.0, 9.9]
+            ]],
+            'Vĩnh Long': [[
+                [105.6, 9.9], [106.2, 9.9], [106.2, 10.4], [105.6, 10.4], [105.6, 9.9]
+            ]],
+            'Trà Vinh': [[
+                [106.0, 9.6], [106.6, 9.6], [106.6, 10.2], [106.0, 10.2], [106.0, 9.6]
+            ]],
+            'Đồng Tháp': [[
+                [105.3, 10.2], [105.9, 10.2], [105.9, 10.8], [105.3, 10.8], [105.3, 10.2]
+            ]],
+            'An Giang': [[
+                [104.9, 10.1], [105.7, 10.1], [105.7, 10.8], [104.9, 10.8], [104.9, 10.1]
+            ]],
+            'Kiên Giang': [[
+                [104.5, 9.5], [105.4, 9.5], [105.4, 10.5], [104.5, 10.5], [104.5, 9.5]
+            ]],
+            'Cần Thơ': [[
+                [105.5, 9.8], [106.0, 9.8], [106.0, 10.3], [105.5, 10.3], [105.5, 9.8]
+            ]],
+            'Hậu Giang': [[
+                [105.4, 9.5], [105.9, 9.5], [105.9, 10.0], [105.4, 10.0], [105.4, 9.5]
+            ]],
+            'Sóc Trăng': [[
+                [105.7, 9.3], [106.3, 9.3], [106.3, 9.9], [105.7, 9.9], [105.7, 9.3]
+            ]],
+            'Bạc Liêu': [[
+                [105.4, 9.0], [105.9, 9.0], [105.9, 9.5], [105.4, 9.5], [105.4, 9.0]
+            ]],
+            'Cà Mau': [[
+                [104.8, 8.6], [105.5, 8.6], [105.5, 9.4], [104.8, 9.4], [104.8, 8.6]
+            ]],
+            'Bình Phước': [[
+                [106.4, 11.4], [107.2, 11.4], [107.2, 12.2], [106.4, 12.2], [106.4, 11.4]
+            ]],
+            'Bình Thuận': [[
+                [107.4, 10.5], [108.5, 10.5], [108.5, 11.6], [107.4, 11.6], [107.4, 10.5]
+            ]],
+            'Ninh Thuận': [[
+                [108.2, 11.2], [109.2, 11.2], [109.2, 12.0], [108.2, 12.0], [108.2, 11.2]
+            ]],
+            'Lâm Đồng': [[
+                [107.2, 11.0], [108.8, 11.0], [108.8, 12.3], [107.2, 12.3], [107.2, 11.0]
             ]]
         }
         
         for zone in zones:
-            coordinates = demo_polygons.get(zone.name, [])
+            coordinates = south_vietnam_polygons.get(zone.name, [])
             if not coordinates:
-                # Default box
+                # Default fallback polygon
                 coordinates = [[
                     [106.0, 10.0], [107.0, 10.0], 
                     [107.0, 11.0], [106.0, 11.0], [106.0, 10.0]
@@ -184,7 +249,8 @@ class DeliveryZoneManager:
                 'properties': {
                     'name': zone.name,
                     'delivery_fee': float(zone.delivery_fee),
-                    'delivery_time': zone.delivery_time
+                    'delivery_time': zone.delivery_time,
+                    'area_description': zone.area_description
                 },
                 'geometry': {
                     'type': 'Polygon',
@@ -268,7 +334,7 @@ class MapGenerator:
         # Tạo MarkerCluster để group markers
         from folium.plugins import MarkerCluster
         marker_cluster = MarkerCluster(
-            name='Trang trại',
+            name='Cửa hàng',
             overlay=True,
             control=True,
             icon_create_function="""
@@ -284,11 +350,11 @@ class MapGenerator:
             """
         ).add_to(m)
         
-        # Thêm các trang trại lên bản đồ
+        # Thêm các cửa hàng lên bản đồ
         farms = Farm.objects.all()
         for farm in farms:
             if farm.latitude and farm.longitude:
-                # Icon khác nhau cho trang trại có chứng nhận hữu cơ
+                # Icon khác nhau cho cửa hàng có chứng nhận hữu cơ
                 icon_color = 'green' if farm.organic_certified else 'blue'
                 icon = 'leaf' if farm.organic_certified else 'home'
                 
@@ -312,7 +378,8 @@ class MapGenerator:
         return m
     
     @staticmethod
-    def create_delivery_zones_map(center_lat=10.8231, center_lng=106.6297, zoom=10):
+    def create_delivery_zones_map(center_lat=10.5, center_lng=106.5, zoom=7):
+        """Tạo bản đồ khu vực giao hàng miền Nam Việt Nam"""
         m = folium.Map(
             location=[center_lat, center_lng],
             zoom_start=zoom,
@@ -320,50 +387,138 @@ class MapGenerator:
         )
         
         zones_data = DeliveryZoneManager.get_all_delivery_zones_geojson()
-        colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DFE6E9']
+        
+        # Màu sắc cho các khu vực (gradient từ gần đến xa)
+        colors = [
+            '#FF6B6B',  # Đỏ - gần nhất (TP.HCM)
+            '#4ECDC4',  # Xanh ngọc - gần
+            '#45B7D1',  # Xanh dương - trung bình
+            '#96CEB4',  # Xanh lá nhạt - xa
+            '#FFEAA7',  # Vàng - xa hơn
+            '#DDA0DD',  # Tím nhạt - rất xa
+            '#F0E68C',  # Vàng khaki
+            '#FFB6C1',  # Hồng nhạt
+            '#98FB98',  # Xanh lá nhạt
+            '#87CEEB',  # Xanh da trời
+            '#DEB887',  # Nâu nhạt
+            '#F5DEB3',  # Wheat
+            '#FFE4E1',  # Misty rose
+            '#E0FFFF',  # Light cyan
+            '#FAFAD2',  # Light goldenrod
+            '#D3D3D3',  # Light gray
+            '#FFF8DC',  # Cornsilk
+            '#F0F8FF',  # Alice blue
+            '#FDF5E6',  # Old lace
+            '#F5F5DC',  # Beige
+            '#FFFACD',  # Lemon chiffon
+            '#E6E6FA'   # Lavender
+        ]
         
         for i, feature in enumerate(zones_data['features']):
             coords = feature['geometry']['coordinates'][0]
-            # Folium needs Lat, Lng - GeoJSON is Lng, Lat
+            # Folium cần Lat, Lng - GeoJSON là Lng, Lat
             folium_coords = [[c[1], c[0]] for c in coords]
             props = feature['properties']
             
-            # Tính center của polygon để làm tâm vòng tròn
-            center_lat = sum([c[0] for c in folium_coords]) / len(folium_coords)
-            center_lng = sum([c[1] for c in folium_coords]) / len(folium_coords)
-            
             color = colors[i % len(colors)]
             
+            # Popup HTML với thông tin chi tiết
             popup_html = f"""
-            <div style="font-family: Arial, sans-serif;">
-                <h4 style="margin: 0 0 10px 0; color: {color};">{props['name']}</h4>
-                <p style="margin: 5px 0;"><strong>📍 Phí giao hàng:</strong> {props['delivery_fee']:,.0f} VNĐ</p>
-                <p style="margin: 5px 0;"><strong>⏰ Thời gian:</strong> {props['delivery_time']}</p>
-                <p style="margin: 5px 0;"><strong>📊 Trạng thái:</strong> <span style="color: green;">Hoạt động</span></p>
+            <div style="font-family: 'Inter', Arial, sans-serif; width: 280px;">
+                <div style="background: linear-gradient(135deg, {color}, {color}88); padding: 15px; margin: -10px -10px 10px -10px; border-radius: 8px 8px 0 0;">
+                    <h3 style="margin: 0; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                        <i class="fas fa-map-marker-alt"></i> {props['name']}
+                    </h3>
+                </div>
+                
+                <div style="padding: 5px 0;">
+                    <p style="margin: 8px 0; font-size: 13px; line-height: 1.4;">
+                        <strong><i class="fas fa-info-circle" style="color: #007bff;"></i> Khu vực:</strong><br>
+                        <span style="color: #666;">{props['area_description']}</span>
+                    </p>
+                    
+                    <div style="display: flex; justify-content: space-between; margin: 12px 0;">
+                        <div style="text-align: center; flex: 1;">
+                            <div style="background: #e8f5e8; padding: 8px; border-radius: 6px;">
+                                <i class="fas fa-truck" style="color: #28a745; font-size: 16px;"></i><br>
+                                <strong style="color: #28a745;">{props['delivery_fee']:,.0f} VNĐ</strong><br>
+                                <small style="color: #666;">Phí giao hàng</small>
+                            </div>
+                        </div>
+                        <div style="width: 10px;"></div>
+                        <div style="text-align: center; flex: 1;">
+                            <div style="background: #fff3cd; padding: 8px; border-radius: 6px;">
+                                <i class="fas fa-clock" style="color: #856404; font-size: 16px;"></i><br>
+                                <strong style="color: #856404;">{props['delivery_time']}</strong><br>
+                                <small style="color: #666;">Thời gian</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 10px;">
+                        <span style="background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 12px; font-size: 12px;">
+                            <i class="fas fa-check-circle"></i> Đang hoạt động
+                        </span>
+                    </div>
+                </div>
             </div>
             """
             
-            # Vẽ vòng tròn phạm vi phủ sóng (ước lượng bán kính ~5km)
-            folium.Circle(
-                location=[center_lat, center_lng],
-                radius=5000,  # 5km radius
-                popup=folium.Popup(popup_html, max_width=300),
-                tooltip=f"{props['name']} - {props['delivery_time']}",
+            # Vẽ polygon cho khu vực
+            folium.Polygon(
+                locations=folium_coords,
+                popup=folium.Popup(popup_html, max_width=320),
+                tooltip=f"{props['name']} - {props['delivery_time']} - {props['delivery_fee']:,.0f} VNĐ",
                 color=color,
                 fill=True,
                 fillColor=color,
-                fillOpacity=0.2,
-                weight=3,
+                fillOpacity=0.3,
+                weight=2,
                 opacity=0.8
             ).add_to(m)
             
-            # Thêm marker cho center
+            # Tính center của polygon để đặt marker
+            center_lat = sum([c[0] for c in folium_coords]) / len(folium_coords)
+            center_lng = sum([c[1] for c in folium_coords]) / len(folium_coords)
+            
+            # Icon khác nhau dựa trên phí giao hàng
+            if props['delivery_fee'] <= 30000:
+                icon_color = 'green'
+                icon = 'home'
+            elif props['delivery_fee'] <= 60000:
+                icon_color = 'blue'
+                icon = 'truck'
+            else:
+                icon_color = 'orange'
+                icon = 'plane'
+            
+            # Thêm marker cho center của khu vực
             folium.Marker(
                 location=[center_lat, center_lng],
                 popup=popup_html,
-                tooltip=props['name'],
-                icon=folium.Icon(color='blue' if i % 2 == 0 else 'green', icon='truck', prefix='fa')
+                tooltip=f"{props['name']} - {props['delivery_fee']:,.0f} VNĐ",
+                icon=folium.Icon(color=icon_color, icon=icon, prefix='fa')
             ).add_to(m)
+        
+        # Thêm legend
+        legend_html = '''
+        <div style="position: fixed; 
+                    bottom: 50px; right: 50px; width: 200px; height: auto; 
+                    background-color: white; border:2px solid grey; z-index:9999; 
+                    font-size:14px; padding: 10px; border-radius: 8px;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+            <h4 style="margin-top: 0;"><i class="fas fa-info-circle"></i> Chú thích</h4>
+            <p style="margin: 5px 0;"><i class="fas fa-home" style="color: green;"></i> Gần (≤30k VNĐ)</p>
+            <p style="margin: 5px 0;"><i class="fas fa-truck" style="color: blue;"></i> Trung bình (30-60k VNĐ)</p>
+            <p style="margin: 5px 0;"><i class="fas fa-plane" style="color: orange;"></i> Xa (>60k VNĐ)</p>
+            <hr style="margin: 8px 0;">
+            <p style="margin: 5px 0; font-size: 12px; color: #666;">
+                <strong>Phạm vi:</strong> Toàn miền Nam<br>
+                <strong>Tổng:</strong> 22 tỉnh/thành
+            </p>
+        </div>
+        '''
+        m.get_root().html.add_child(folium.Element(legend_html))
         
         return m
 
@@ -409,7 +564,7 @@ class MapGenerator:
         folium.Marker(
             location=[order.delivery_latitude, order.delivery_longitude],
             popup=order.delivery_address,
-            icon=folium.Icon(color='red', icon='home', prefix='fa')
+            icon=folium.Icon(color='red', icon='store', prefix='fa')
         ).add_to(m)
         
         # Assigned Farm (if exists)
@@ -424,12 +579,18 @@ class MapGenerator:
             
             # Lấy route thực tế từ routing API
             from .routing import get_route_with_fee
+# Shipping calculator imports removed for minimal version
+# from .shipping_calculator import ShippingCalculator
+            
             route_info = get_route_with_fee(
                 farm.latitude, farm.longitude,
                 order.delivery_latitude, order.delivery_longitude
             )
             
             if route_info:
+                # Tính phí ship để hiển thị
+                shipping_fee = order.delivery_fee if order.delivery_fee else 0
+                
                 # Hiển thị route THỰC TẾ theo đường phố
                 folium.GeoJson(
                     route_info['geometry'],
@@ -438,7 +599,7 @@ class MapGenerator:
                         'weight': 5,
                         'opacity': 0.8
                     },
-                    tooltip=f"📍 {route_info['distance_km']:.1f} km | ⏱ {route_info['duration_min']:.0f} phút | 💰 {route_info['shipping_fee']:,} VNĐ"
+                    tooltip=f"📍 {route_info['distance_km']:.1f} km | ⏱ {route_info['duration_min']:.0f} phút | 💰 {shipping_fee:,.0f} VNĐ"
                 ).add_to(m)
             else:
                 # Fallback: nếu routing API lỗi, dùng đường thẳng
@@ -459,7 +620,7 @@ class MapGenerator:
 
     @staticmethod
     def create_single_farm_map(farm):
-        """Tạo bản đồ cho một trang trại duy nhất"""
+        """Tạo bản đồ cho một cửa hàng duy nhất"""
         if not farm or not farm.latitude or not farm.longitude:
             return None
             
@@ -492,7 +653,7 @@ class GeocodingService:
 class OrderAnalytics:
     """
     Phân tích đơn hàng theo địa lý
-    Thống kê theo khu vực, trang trại
+    Thống kê theo khu vực, cửa hàng
     """
     
     @staticmethod
@@ -520,8 +681,8 @@ class OrderAnalytics:
     @staticmethod
     def get_popular_farms():
         """
-        Thống kê trang trại phổ biến nhất
-        Returns: List các trang trại được đặt hàng nhiều nhất
+        Thống kê cửa hàng phổ biến nhất
+        Returns: List các cửa hàng được đặt hàng nhiều nhất
         """
         from django.db.models import Count, Sum
         

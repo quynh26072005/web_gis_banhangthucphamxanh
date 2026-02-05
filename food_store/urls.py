@@ -11,6 +11,7 @@ urlpatterns = [
     # Main pages
     path('', views.home_view, name='home'),
     path('products/', views.product_list_view, name='product_list'),
+    path('products/search/', views.product_list_view, name='product_search'),
     path('product/<int:pk>/', views.product_detail_view, name='product_detail'),
     path('categories/', views.category_list_view, name='category_list'),
     path('farms/', views.farm_list_view, name='farm_list'),

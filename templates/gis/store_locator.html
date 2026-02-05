@@ -1,0 +1,616 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Clean Food GIS{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    .locator-header {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+    }
+
+    .search-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        margin-top: -50px;
+        z-index: 10;
+        position: relative;
+    }
+
+    #map {
+        height: 500px;
+        width: 100%;
+        border-radius: 15px;
+        border: 1px solid #ddd;
+    }
+
+    .store-list {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .store-card {
+        border-radius: 10px;
+        border-left: 5px solid #43e97b;
+        margin-bottom: 1rem;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .store-card:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+    }
+
+    .store-card.selected {
+        background-color: #e8f5e8;
+        border-left-color: #28a745;
+    }
+
+    .route-info {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-top: 1rem;
+        display: none;
+    }
+
+    .route-info.show {
+        display: block;
+    }
+
+    .store-info {
+        display: none;
+    }
+
+    .store-info.show {
+        display: block;
+    }
+
+    .loading-spinner {
+        display: none;
+    }
+
+    .loading-spinner.show {
+        display: inline-block;
+    }
+
+    .product-preview {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .product-item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem;
+        border-bottom: 1px solid #eee;
+    }
+
+    .product-item:last-child {
+        border-bottom: none;
+    }
+
+    .product-image {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 5px;
+        margin-right: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="locator-header text-center">
+    <div class="container">
+        <h1><i class="fas fa-search-location"></i> {{ title }}</h1>
+        <p class="lead">Tìm cửa hàng gần nhất và xem đường đi chi tiết</p>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="search-card">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center mb-3">
+                    <button id="get-location" class="btn btn-success me-3">
+                        <i class="fas fa-crosshairs"></i> Lấy vị trí của tôi
+                    </button>
+                    <div id="location-status" class="text-muted small">
+                        Hệ thống sẽ lấy tọa độ từ trình duyệt của bạn
+                    </div>
+                    <div class="loading-spinner ms-2">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">Khoảng cách tối đa (km)</label>
+                        <select id="max-distance" class="form-select">
+                            <option value="10">10 km</option>
+                            <option value="20" selected>20 km</option>
+                            <option value="50">50 km</option>
+                            <option value="100">100 km</option>
+                            <option value="200">200 km</option>
+                            <option value="500">500 km</option>
+                            <option value="1000">1000 km (toàn quốc)</option>
+                            <option value="99999">Không giới hạn</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Phương tiện di chuyển</label>
+                        <select id="vehicle-type" class="form-select">
+                            <option value="driving">🚗 Ô tô</option>
+                            <option value="motorcycle">🏍️ Xe máy</option>
+                            <option value="bicycle">🚲 Xe đạp</option>
+                            <option value="foot">🚶 Đi bộ</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Hiển thị</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="show-routes" checked>
+                            <label class="form-check-label" for="show-routes">
+                                Hiển thị đường đi trên bản đồ
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <span class="badge bg-info p-2"><i class="fas fa-info-circle"></i> Tự động tính khoảng cách và thời gian</span>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-lg-8">
+                <div id="map" class="bg-light d-flex align-items-center justify-content-center">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-map-marked-alt fa-3x mb-3"></i>
+                        <p>Bản đồ sẽ hiển thị khi bạn cung cấp vị trí</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <h5>Cửa hàng gần bạn</h5>
+                <hr>
+                <div id="store-results" class="store-list">
+                    <p class="text-muted text-center pt-5">Chưa có dữ liệu tìm kiếm.</p>
+                </div>
+                
+                <!-- Route Info Panel -->
+                <div id="route-info" class="route-info">
+                    <h6><i class="fas fa-route"></i> Thông tin đường đi</h6>
+                    <div id="route-details"></div>
+                    
+                    <h6 class="mt-3"><i class="fas fa-info-circle"></i> Thông tin cửa hàng</h6>
+                    <div id="store-info" class="store-info"></div>
+                    
+                    <h6 class="mt-3"><i class="fas fa-leaf"></i> Sản phẩm nổi bật</h6>
+                    <div id="product-preview" class="product-preview"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    let map = null;
+    let userMarker = null;
+    let storeMarkers = [];
+    let routeLayer = null;
+    let currentUserLocation = null;
+    
+    const getLocationBtn = document.getElementById('get-location');
+    const statusText = document.getElementById('location-status');
+    const storeResults = document.getElementById('store-results');
+    const routeInfo = document.getElementById('route-info');
+    const loadingSpinner = document.querySelector('.loading-spinner');
+    const maxDistanceSelect = document.getElementById('max-distance');
+    const showRoutesCheckbox = document.getElementById('show-routes');
+    const vehicleTypeSelect = document.getElementById('vehicle-type');
+
+    // Initialize map
+    function initMap() {
+        if (!map) {
+            map = L.map('map').setView([10.762622, 106.660172], 11); // Ho Chi Minh City center
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        }
+    }
+
+    getLocationBtn.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+            statusText.textContent = "Trình duyệt không hỗ trợ định vị.";
+            return;
+        }
+
+        statusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lấy vị trí...';
+        loadingSpinner.classList.add('show');
+        getLocationBtn.disabled = true;
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                currentUserLocation = {lat, lon};
+                
+                statusText.innerHTML = `<i class="fas fa-check-circle text-success"></i> Đã lấy được: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                
+                initMap();
+                searchStores(lat, lon);
+            },
+            (error) => {
+                statusText.innerHTML = `<i class="fas fa-exclamation-circle text-danger"></i> Lỗi: ${error.message}`;
+                loadingSpinner.classList.remove('show');
+                getLocationBtn.disabled = false;
+            }
+        );
+    });
+
+    function searchStores(lat, lon) {
+        const maxDistance = maxDistanceSelect.value;
+        const includeRoute = showRoutesCheckbox.checked;
+        const vehicleType = vehicleTypeSelect.value;
+        const isUnlimited = maxDistance >= 99999;
+        
+        // Hiển thị loading message phù hợp
+        const vehicleNames = {
+            'driving': 'ô tô',
+            'motorcycle': 'xe máy', 
+            'bicycle': 'xe đạp',
+            'foot': 'đi bộ'
+        };
+        
+        const vehicleName = vehicleNames[vehicleType] || vehicleType;
+        const loadingMessage = isUnlimited ? 
+            `<i class="fas fa-spinner fa-spin"></i> Đang tìm kiếm toàn quốc bằng ${vehicleName}... (có thể mất vài giây)` :
+            `<i class="fas fa-spinner fa-spin"></i> Đang tìm kiếm bằng ${vehicleName}...`;
+        
+        storeResults.innerHTML = `<div class="text-center text-muted pt-3">${loadingMessage}</div>`;
+        
+        fetch(`{% url 'gis_tools:find_nearest_farms_api' %}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                latitude: lat,
+                longitude: lon,
+                max_distance: parseInt(maxDistance),
+                include_route: includeRoute,
+                vehicle_type: vehicleType
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderMapWithStores(lat, lon, data.farms);
+                renderStoreResults(data.farms, vehicleName);
+                
+                // Hiển thị thông báo thành công
+                if (isUnlimited && data.farms.length > 0) {
+                    statusText.innerHTML = `<i class="fas fa-check-circle text-success"></i> Tìm thấy ${data.farms.length} cửa hàng trên toàn quốc (${vehicleName})`;
+                } else if (data.farms.length > 0) {
+                    statusText.innerHTML = `<i class="fas fa-check-circle text-success"></i> Tìm thấy ${data.farms.length} cửa hàng trong bán kính ${maxDistance}km (${vehicleName})`;
+                }
+            } else {
+                statusText.innerHTML = `<i class="fas fa-exclamation-circle text-danger"></i> Lỗi: ${data.error}`;
+                storeResults.innerHTML = '<p class="text-center text-muted">Có lỗi xảy ra khi tìm kiếm.</p>';
+            }
+            loadingSpinner.classList.remove('show');
+            getLocationBtn.disabled = false;
+        })
+        .catch(err => {
+            console.error(err);
+            statusText.innerHTML = `<i class="fas fa-exclamation-circle text-danger"></i> Lỗi kết nối API`;
+            storeResults.innerHTML = '<p class="text-center text-muted">Lỗi kết nối. Vui lòng thử lại.</p>';
+            loadingSpinner.classList.remove('show');
+            getLocationBtn.disabled = false;
+        });
+    }
+
+    function renderMapWithStores(userLat, userLon, stores) {
+        // Clear existing markers
+        if (userMarker) map.removeLayer(userMarker);
+        storeMarkers.forEach(marker => map.removeLayer(marker));
+        storeMarkers = [];
+        if (routeLayer) map.removeLayer(routeLayer);
+
+        // Add user marker
+        userMarker = L.marker([userLat, userLon], {
+            icon: L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            })
+        }).addTo(map);
+        
+        userMarker.bindPopup('<b>Vị trí của bạn</b>').openPopup();
+
+        // Add store markers
+        stores.forEach((store, index) => {
+            const marker = L.marker([store.latitude, store.longitude], {
+                icon: L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                })
+            }).addTo(map);
+            
+            marker.bindPopup(`
+                <div>
+                    <h6>${store.name}</h6>
+                    <p class="mb-1"><i class="fas fa-road"></i> ${store.distance_km.toFixed(1)} km</p>
+                    <p class="mb-1"><i class="fas fa-clock"></i> ${store.duration_min.toFixed(0)} phút</p>
+                    ${store.organic_certified ? '<span class="badge bg-success">Hữu cơ</span>' : '<span class="badge bg-info">Sạch</span>'}
+                    <br><button class="btn btn-sm btn-primary mt-2" onclick="showStoreRoute(${store.id})">Xem đường đi</button>
+                </div>
+            `);
+            
+            storeMarkers.push(marker);
+        });
+
+        // Fit map to show all markers
+        const group = new L.featureGroup([userMarker, ...storeMarkers]);
+        map.fitBounds(group.getBounds().pad(0.1));
+    }
+
+    function renderStoreResults(stores, vehicleName = 'ô tô') {
+        if (!stores || stores.length === 0) {
+            storeResults.innerHTML = '<p class="text-center text-muted">Không tìm thấy cửa hàng nào trong khu vực.</p>';
+            return;
+        }
+
+        const maxDistance = maxDistanceSelect.value;
+        const isUnlimited = maxDistance >= 99999;
+        
+        // Icon cho phương tiện
+        const vehicleIcons = {
+            'driving': '🚗',
+            'motorcycle': '🏍️',
+            'bicycle': '🚲',
+            'foot': '🚶'
+        };
+        
+        const vehicleType = vehicleTypeSelect.value;
+        const vehicleIcon = vehicleIcons[vehicleType] || '🚗';
+        
+        let headerHtml = `<div class="alert alert-success">
+            <h6><i class="fas fa-search"></i> Tìm thấy ${stores.length} cửa hàng</h6>
+            <small>
+                ${vehicleIcon} Phương tiện: ${vehicleName} • 
+                Bán kính: ${isUnlimited ? 'Không giới hạn' : maxDistance + ' km'}
+            </small>
+        </div>`;
+
+        let html = headerHtml;
+        stores.forEach((store, index) => {
+            // Hiển thị khoảng cách với màu sắc khác nhau
+            let distanceClass = 'text-success';
+            if (store.distance_km > 100) distanceClass = 'text-danger';
+            else if (store.distance_km > 50) distanceClass = 'text-warning';
+            
+            // Hiển thị thời gian khác nhau tùy phương tiện
+            let durationText = `${store.duration_min.toFixed(0)} phút`;
+            if (vehicleType === 'foot' && store.duration_min > 60) {
+                durationText = `${(store.duration_min / 60).toFixed(1)} giờ`;
+            }
+            
+            html += `
+                <div class="card store-card" data-store-id="${store.id}" onclick="selectStore(${store.id}, ${index})">
+                    <div class="card-body py-2 px-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1 text-success">${store.name}</h6>
+                                <small class="text-muted d-block">${store.address}</small>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <small class="${distanceClass}">
+                                        <i class="fas fa-road"></i> ${store.distance_km.toFixed(1)} km • 
+                                        <i class="fas fa-clock"></i> ${durationText}
+                                    </small>
+                                    <div>
+                                        ${store.organic_certified ? '<span class="badge bg-success">Hữu cơ</span>' : '<span class="badge bg-info">Sạch</span>'}
+                                        <span class="badge bg-light text-dark">${store.product_count} sản phẩm</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        storeResults.innerHTML = html;
+    }
+
+    function selectStore(storeId, index) {
+        // Remove previous selection
+        document.querySelectorAll('.store-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        
+        // Add selection to clicked card
+        document.querySelector(`[data-store-id="${storeId}"]`).classList.add('selected');
+        
+        // Show route info
+        showStoreRoute(storeId);
+        
+        // Focus on store marker
+        if (storeMarkers[index]) {
+            map.setView(storeMarkers[index].getLatLng(), 15);
+            storeMarkers[index].openPopup();
+        }
+    }
+
+    function showStoreRoute(storeId) {
+        if (!currentUserLocation) return;
+        
+        loadingSpinner.classList.add('show');
+        
+        const vehicleType = vehicleTypeSelect.value;
+        
+        fetch(`{% url 'gis_tools:get_route_to_farm_api' %}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                farm_id: storeId,
+                customer_lat: currentUserLocation.lat,
+                customer_lng: currentUserLocation.lon,
+                vehicle_type: vehicleType
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayRouteInfo(data);
+                if (data.route.geometry && showRoutesCheckbox.checked) {
+                    drawRouteOnMap(data.route.geometry);
+                }
+            } else {
+                alert('Lỗi: ' + data.error);
+            }
+            loadingSpinner.classList.remove('show');
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Lỗi kết nối API');
+            loadingSpinner.classList.remove('show');
+        });
+    }
+
+    function displayRouteInfo(data) {
+        const routeDetails = document.getElementById('route-details');
+        const storeInfo = document.getElementById('store-info');
+        const productPreview = document.getElementById('product-preview');
+        
+        // Vehicle info
+        const vehicleIcons = {
+            'driving': '🚗',
+            'motorcycle': '🏍️', 
+            'bicycle': '🚲',
+            'foot': '🚶'
+        };
+        
+        const vehicleIcon = vehicleIcons[data.route.vehicle_type] || '🚗';
+        const vehicleName = data.route.vehicle_name || data.route.vehicle_type;
+        
+        // Route details với thông tin phương tiện
+        let durationText = `${data.route.duration_min.toFixed(0)} phút`;
+        if (data.route.vehicle_type === 'foot' && data.route.duration_min > 60) {
+            durationText = `${(data.route.duration_min / 60).toFixed(1)} giờ`;
+        }
+        
+        routeDetails.innerHTML = `
+            <div class="row">
+                <div class="col-4">
+                    <div class="text-center">
+                        <h5 class="text-primary mb-0">${data.route.distance_km.toFixed(1)} km</h5>
+                        <small class="text-muted">Khoảng cách</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="text-center">
+                        <h5 class="text-info mb-0">${durationText}</h5>
+                        <small class="text-muted">Thời gian</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="text-center">
+                        <h5 class="mb-0">${vehicleIcon}</h5>
+                        <small class="text-muted">${vehicleName}</small>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Hiển thị thông tin cửa hàng
+        storeInfo.innerHTML = `
+            <div class="alert alert-success py-2 mb-2">
+                <div class="text-center">
+                    <i class="fas fa-store"></i> Đã tính toán đường đi thành công
+                </div>
+            </div>
+        `;
+        
+        // Product preview
+        if (data.products && data.products.length > 0) {
+            let productHtml = '';
+            data.products.forEach(product => {
+                productHtml += `
+                    <div class="product-item">
+                        ${product.image_url ? `<img src="${product.image_url}" class="product-image" alt="${product.name}">` : '<div class="product-image bg-light d-flex align-items-center justify-content-center"><i class="fas fa-leaf text-success"></i></div>'}
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">${product.name}</div>
+                            <small class="text-muted">${product.price.toLocaleString()}đ/${product.unit}</small>
+                        </div>
+                    </div>
+                `;
+            });
+            productPreview.innerHTML = productHtml;
+        } else {
+            productPreview.innerHTML = '<p class="text-muted text-center">Không có sản phẩm nổi bật</p>';
+        }
+        
+        routeInfo.classList.add('show');
+    }
+
+    function drawRouteOnMap(geometry) {
+        // Remove existing route
+        if (routeLayer) map.removeLayer(routeLayer);
+        
+        if (geometry && geometry.coordinates) {
+            // Convert coordinates to Leaflet format
+            const latlngs = geometry.coordinates.map(coord => [coord[1], coord[0]]);
+            
+            routeLayer = L.polyline(latlngs, {
+                color: '#007bff',
+                weight: 4,
+                opacity: 0.7
+            }).addTo(map);
+        }
+    }
+
+    // Event listeners for settings
+    maxDistanceSelect.addEventListener('change', () => {
+        if (currentUserLocation) {
+            searchStores(currentUserLocation.lat, currentUserLocation.lon);
+        }
+    });
+
+    showRoutesCheckbox.addEventListener('change', () => {
+        if (currentUserLocation) {
+            searchStores(currentUserLocation.lat, currentUserLocation.lon);
+        }
+    });
+
+    vehicleTypeSelect.addEventListener('change', () => {
+        if (currentUserLocation) {
+            searchStores(currentUserLocation.lat, currentUserLocation.lon);
+        }
+    });
+</script>
+{% endblock %}

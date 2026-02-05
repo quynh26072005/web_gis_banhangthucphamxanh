@@ -1,0 +1,465 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Clean Food GIS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analytics-header {
+        background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
+
+    .analytics-header h1 {
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .admin-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 8px 20px;
+        border-radius: 25px;
+        font-size: 0.9em;
+        font-weight: 600;
+        display: inline-block;
+        margin-top: 15px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .security-notice {
+        background: #fff3cd;
+        color: #856404;
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+        border-left: 4px solid #ffc107;
+        font-weight: 500;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-card:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-icon.purple {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .stat-icon.green {
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        color: white;
+    }
+
+    .stat-icon.blue {
+        background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+        color: white;
+    }
+
+    .stat-icon.orange {
+        background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+        color: white;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        color: #718096;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+
+    .chart-card h3 {
+        color: #2d3748;
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+    }
+
+    .zone-item {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s ease;
+    }
+
+    .zone-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .zone-name {
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    .zone-count {
+        background: white;
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        color: #667eea;
+    }
+
+    .store-item {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border-left: 4px solid #48bb78;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .store-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .store-rank {
+        display: inline-block;
+        width: 30px;
+        height: 30px;
+        background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+        border-radius: 50%;
+        text-align: center;
+        line-height: 30px;
+        font-weight: 700;
+        color: #744210;
+        margin-right: 0.5rem;
+    }
+
+    .store-stats {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        color: #718096;
+    }
+
+    .back-btn {
+        background: white;
+        color: #4facfe;
+        border: 2px solid #4facfe;
+        padding: 0.5rem 1.5rem;
+        border-radius: 25px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        font-weight: 600;
+    }
+
+    .back-btn:hover {
+        background: #4facfe;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(79, 172, 254, 0.3);
+    }
+
+    .info-alert {
+        background: linear-gradient(135deg, #e6fffa 0%, #81e6d9 100%);
+        border-left: 4px solid #38b2ac;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="analytics-header">
+    <div class="container">
+        <a href="{% url 'gis_tools:home' %}" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Quay lại
+        </a>
+        <h1 class="mt-3"><i class="fas fa-chart-line"></i> {{ title }}</h1>
+        <p class="lead mb-0">Phân tích dữ liệu GIS và thống kê kinh doanh</p>
+        <div class="admin-badge">
+            <i class="fas fa-shield-alt"></i> Chỉ dành cho Administrator
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Security Notice -->
+    <div class="security-notice">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>Thông tin bảo mật:</strong> Dashboard này chứa dữ liệu kinh doanh nhạy cảm và chỉ được phép truy cập bởi Administrator. 
+        Đăng nhập với quyền: <strong>{{ user.username }}</strong> (Superuser)
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <i class="fas fa-store"></i>
+                </div>
+                <div class="stat-value">{{ total_stores }}</div>
+                <div class="stat-label">Cửa hàng</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fas fa-map-marked-alt"></i>
+                </div>
+                <div class="stat-value">{{ total_zones }}</div>
+                <div class="stat-label">Khu vực giao hàng</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="stat-value">{{ total_orders }}</div>
+                <div class="stat-label">Đơn hàng</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon orange">
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                <div class="stat-value">{{ orders_by_zone|length }}</div>
+                <div class="stat-label">Khu vực có đơn</div>
+            </div>
+        </div>
+    </div>
+
+    {% if total_orders > 0 %}
+    <div class="info-alert">
+        <i class="fas fa-info-circle"></i>
+        <strong>Thông tin:</strong> Dashboard này hiển thị phân tích dữ liệu theo địa lý, giúp tối ưu hóa chiến lược
+        kinh doanh và giao hàng.
+    </div>
+
+    <!-- Heatmap Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="chart-card p-0 overflow-hidden">
+                <div class="p-4">
+                    <h3><i class="fas fa-fire text-danger"></i> Bản đồ Nhiệt Mật độ Đơn hàng</h3>
+                    <p class="text-muted">Xác định các khu vực có nhu cầu cao dựa trên vị trí giao hàng.</p>
+                </div>
+                <div style="height: 500px; width: 100%;">
+                    {% if map_html %}
+                    {{ map_html|safe }}
+                    {% else %}
+                    <div class="p-4">
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle"></i> Chưa có đủ dữ liệu vị trí đơn hàng để hiển thị bản đồ
+                            nhiệt.
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Orders by Zone -->
+        <div class="col-lg-6 mb-4">
+            <div class="chart-card">
+                <h3><i class="fas fa-map-marker-alt"></i> Đơn hàng theo Khu vực</h3>
+
+                {% if orders_by_zone %}
+                <div id="orders-by-zone">
+                    {% for zone in orders_by_zone %}
+                    <div class="zone-item">
+                        <div>
+                            <div class="zone-name">
+                                <i class="fas fa-map-pin"></i> {{ zone.zone__name }}
+                            </div>
+                            <small class="text-muted">{{ zone.zone__delivery_time }}</small>
+                        </div>
+                        <div class="zone-count">
+                            {{ zone.order_count }} đơn
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Simple bar chart using CSS -->
+                <div class="mt-4">
+                    <h5 class="mb-3">Biểu đồ trực quan</h5>
+                    {% for zone in orders_by_zone %}
+                    <div class="mb-2">
+                        <small class="text-muted">{{ zone.zone__name }}</small>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar" role="progressbar"
+                                style="width: {% if zone.order_count > 100 %}100{% else %}{{ zone.order_count }}{% endif %}%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);"
+                                aria-valuenow="{{ zone.order_count }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ zone.order_count }} đơn
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Chưa có dữ liệu đơn hàng theo khu vực
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Popular Stores -->
+        <div class="col-lg-6 mb-4">
+            <div class="chart-card">
+                <h3><i class="fas fa-trophy"></i> Top Cửa hàng Phổ biến</h3>
+
+                {% if popular_stores %}
+                <div id="popular-stores">
+                    {% for store_stat in popular_stores %}
+                    <div class="store-item">
+                        <div>
+                            <span class="store-rank">{{ forloop.counter }}</span>
+                            <strong>{{ store_stat.store__name }}</strong>
+                        </div>
+                        <div class="store-stats">
+                            <span>
+                                <i class="fas fa-shopping-bag"></i>
+                                {{ store_stat.total_products }} sản phẩm
+                            </span>
+                            <span>
+                                <i class="fas fa-box"></i>
+                                {{ store_stat.total_sold|default:0 }} đã bán
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Chưa có dữ liệu cửa hàng
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional insights -->
+    <div class="row">
+        <div class="col-12">
+            <div class="chart-card">
+                <h3><i class="fas fa-lightbulb"></i> Thông tin chi tiết</h3>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-map"></i> Phân tích Địa lý</h5>
+                        <ul>
+                            <li>Tổng số khu vực giao hàng: <strong>{{ total_zones }}</strong></li>
+                            <li>Khu vực có đơn hàng: <strong>{{ orders_by_zone|length }}</strong></li>
+                            <li>Cửa hàng đang hoạt động: <strong>{{ total_stores }}</strong></li>
+                        </ul>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-tasks"></i> Khuyến nghị</h5>
+                        <ul>
+                            {% if orders_by_zone %}
+                            <li>Tập trung vào các khu vực có nhiều đơn hàng nhất</li>
+                            <li>Mở rộng cửa hàng ở khu vực có nhu cầu cao</li>
+                            <li>Tối ưu hóa tuyến đường giao hàng</li>
+                            {% else %}
+                            <li>Tạo dữ liệu mẫu để xem phân tích</li>
+                            <li>Thêm các khu vực giao hàng mới</li>
+                            <li>Quản lý cửa hàng và sản phẩm</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Animation for stat cards
+    document.addEventListener('DOMContentLoaded', function () {
+        const statValues = document.querySelectorAll('.stat-value');
+
+        statValues.forEach(stat => {
+            const finalValue = parseInt(stat.textContent);
+            let currentValue = 0;
+            const increment = Math.ceil(finalValue / 50);
+
+            const timer = setInterval(() => {
+                currentValue += increment;
+                if (currentValue >= finalValue) {
+                    currentValue = finalValue;
+                    clearInterval(timer);
+                }
+                stat.textContent = currentValue;
+            }, 20);
+        });
+    });
+</script>
+{% endblock %}

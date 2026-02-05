@@ -19,8 +19,8 @@ urlpatterns = [
     
     # API endpoints
     path('api/find-nearest-farms/', views.find_nearest_farms_api, name='find_nearest_farms_api'),
+    path('api/get-route-to-farm/', views.get_route_to_farm_api, name='get_route_to_farm_api'),
     path('api/check-delivery/', views.check_delivery_availability_api, name='check_delivery_api'),
     path('api/geocode/', views.geocode_address_api, name='geocode_api'),
     path('api/delivery-zones-geojson/', views.delivery_zones_geojson_api, name='delivery_zones_geojson'),
-    path('api/optimize-route/', views.optimize_route_api, name='optimize_route_api'),
 ]
