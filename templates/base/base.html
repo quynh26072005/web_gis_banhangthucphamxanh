@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ title }}{% endblock %} - Thực phẩm Sạch</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    {% load static %}
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+    <link rel="stylesheet" href="{% static 'css/enhanced.css' %}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'food_store:home' %}">
+                <i class="fas fa-leaf"></i> Thực phẩm Sạch
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'food_store:home' %}">Trang chủ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'food_store:product_list' %}">Sản phẩm</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'food_store:farm_list' %}">Cửa hàng</a>
+                    </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="gisDropdown" role="button"
+                            data-bs-toggle="dropdown">
+                            <i class="fas fa-map"></i> GIS Tools
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'gis_tools:home' %}"><i class="fas fa-home"></i>
+                                    Trang chủ GIS</a></li>
+                            <li><a class="dropdown-item" href="{% url 'gis_tools:store_locator' %}"><i
+                                        class="fas fa-search-location"></i> Tìm cửa hàng gần nhất</a></li>
+                            <li><a class="dropdown-item" href="{% url 'gis_tools:farms_map' %}"><i
+                                        class="fas fa-map-marked-alt"></i> Bản đồ Cửa hàng</a></li>
+                            <li><a class="dropdown-item" href="{% url 'gis_tools:delivery_zones_map' %}"><i
+                                        class="fas fa-layer-group"></i> Khu vực Giao hàng</a></li>
+                            {% if user.is_superuser %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'gis_tools:analytics_dashboard' %}"><i
+                                        class="fas fa-chart-line"></i> Dashboard Phân tích</a></li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'food_store:about' %}">Giới thiệu</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'food_store:contact' %}">Liên hệ</a>
+                    </li>
+                </ul>
+
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" href="{% url 'food_store:cart' %}">
+                            <i class="fas fa-shopping-cart"></i> Giỏ hàng
+                            <span
+                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger cart-badge"
+                                id="cartBadge">
+                                0
+                            </span>
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                            data-bs-toggle="dropdown">
+                            <i class="fas fa-user"></i> {{ user.username }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'food_store:profile' %}">Trang cá nhân</a></li>
+                            <li><a class="dropdown-item" href="{% url 'food_store:order_history' %}">Đơn hàng</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <form id="logoutForm" action="{% url 'logout' %}" method="post" style="display: none;">
+                                    {% csrf_token %}
+                                </form>
+                                <a class="dropdown-item" href="#"
+                                    onclick="event.preventDefault(); document.getElementById('logoutForm').submit();">Đăng
+                                    xuất</a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% if user.is_staff %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/" target="_blank">
+                            <i class="fas fa-cog"></i> Admin
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">Đăng nhập</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'food_store:register' %}">Đăng ký</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5><i class="fas fa-leaf"></i> Thực phẩm Sạch</h5>
+                    <p>Website bán thực phẩm sạch với tích hợp GIS, giúp bạn tìm hiểu nguồn gốc và vị trí cửa hàng.
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Liên kết</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'food_store:product_list' %}" class="text-light">Sản phẩm</a></li>
+                        <li><a href="{% url 'food_store:farm_list' %}" class="text-light">Cửa hàng</a></li>
+                        <li><a href="{% url 'food_store:about' %}" class="text-light">Giới thiệu</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Liên hệ</h5>
+                    <p><i class="fas fa-envelope"></i> info@thucphamsach.com</p>
+                    <p><i class="fas fa-phone"></i> 0123 456 789</p>
+                    <p><i class="fas fa-map-marker-alt"></i> TP. Hồ Chí Minh, Việt Nam</p>
+                </div>
+            </div>
+            <hr class="my-4">
+            <div class="text-center">
+                <p>&copy; 2024 Website Thực phẩm Sạch với GIS. Dự án học tập Django.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+                        <script
+                            src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+                        <!-- Leaflet JS -->
+                        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+                        <!-- Main JS -->
+                        <script src="{% static 'js/main.js' %}"></script>
+
+                        {% block extra_js %}{% endblock %}
+
+                        <!-- Cart Badge Update Script -->
+                        {% if user.is_authenticated %}
+                        <script>
+                            // Update cart badge on page load
+                            document.addEventListener('DOMContentLoaded', function () {
+                                updateCartBadge();
+                            });
+
+                            function updateCartBadge() {
+                                // This would normally fetch cart count via API
+                                // For now, we'll just show 0
+                                const cartBadge = document.getElementById('cartBadge');
+                                if (cartBadge) {
+                                    cartBadge.textContent = '0';
+                                }
+                            }
+                        </script>
+                        {% endif %}
+</body>
+
+</html>

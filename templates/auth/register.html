@@ -1,0 +1,93 @@
+{% extends 'base/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0 rounded-lg animate__animated animate__fadeInUp">
+                <div class="card-header bg-gradient-success text-white text-center py-4">
+                    <h3 class="mb-0"><i class="fas fa-user-plus me-2"></i>Đăng Ký Tài Khoản</h3>
+                    <p class="mb-0 mt-2 text-white-50">Tạo tài khoản để mua sắm thực phẩm sạch</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger animate__animated animate__shakeX">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            {% for error in form.non_field_errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <div class="form-text small text-muted"><i class="fas fa-info-circle me-1"></i>{{
+                                field.help_text|safe }}</div>
+                            {% endif %}
+                            {% if field.errors %}
+                            <div class="invalid-feedback d-block animate__animated animate__fadeIn">
+                                {% for error in field.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-success btn-lg text-white shadow-sm hover-scale">
+                                <i class="fas fa-check-circle me-2"></i>Đăng Ký
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center py-3 bg-light">
+                    <div class="small">
+                        Đã có tài khoản? <a href="{% url 'login' %}"
+                            class="text-success fw-bold text-decoration-none">Đăng nhập ngay</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Add Bootstrap classes to Django form inputs automatically
+    document.addEventListener('DOMContentLoaded', function () {
+        var inputs = document.querySelectorAll('input, select, textarea');
+        inputs.forEach(function (input) {
+            if (input.type !== 'checkbox' && input.type !== 'radio') {
+                input.classList.add('form-control');
+                input.classList.add('form-control-lg'); // Make inputs larger/easier to tap
+            } else {
+                input.classList.add('form-check-input');
+            }
+        });
+
+        // Focus first input
+        var firstInput = document.querySelector('input:not([type="hidden"])');
+        if (firstInput) firstInput.focus();
+    });
+</script>
+
+<style>
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+    }
+
+    .hover-scale {
+        transition: transform 0.2s;
+    }
+
+    .hover-scale:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}

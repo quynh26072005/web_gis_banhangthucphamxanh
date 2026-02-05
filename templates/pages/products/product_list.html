@@ -1,0 +1,158 @@
+{% extends 'base/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>{{ title }}</h1>
+            <p class="text-muted">Khám phá các sản phẩm thực phẩm sạch từ cửa hàng</p>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Tìm kiếm</label>
+                            <input type="text" class="form-control" name="search" value="{{ search_query }}" placeholder="Tên sản phẩm...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Danh mục</label>
+                            <select class="form-select" name="category">
+                                <option value="">Tất cả danh mục</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.pk }}" {% if current_category == category.pk %}selected{% endif %}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Cửa hàng</label>
+                            <select class="form-select" name="store">
+                                <option value="">Tất cả cửa hàng</option>
+                                {% for store in stores %}
+                                    <option value="{{ store.pk }}" {% if current_store == store.pk %}selected{% endif %}>
+                                        {{ store.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Sắp xếp</label>
+                            <select class="form-select" name="sort">
+                                <option value="name" {% if sort_by == "name" %}selected{% endif %}>Tên A-Z</option>
+                                <option value="price_low" {% if sort_by == "price_low" %}selected{% endif %}>Giá thấp đến cao</option>
+                                <option value="price_high" {% if sort_by == "price_high" %}selected{% endif %}>Giá cao đến thấp</option>
+                                <option value="newest" {% if sort_by == "newest" %}selected{% endif %}>Mới nhất</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-search"></i> Tìm kiếm
+                            </button>
+                            <a href="{% url 'food_store:product_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Xóa bộ lọc
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Products Grid -->
+    <div class="row">
+        {% for product in page_obj %}
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card h-100">
+                {% if product.image %}
+                    <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                {% else %}
+                    <img src="https://images.unsplash.com/photo-1506976785307-8732e854ad03?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" 
+                         class="card-img-top" alt="{{ product.name }}">
+                {% endif %}
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">{{ product.name }}</h5>
+                    <p class="card-text text-muted small">
+                        <i class="fas fa-map-marker-alt"></i> {{ product.farm.name }}
+                        {% if product.farm.organic_certified %}
+                            <span class="badge bg-success ms-1">Hữu cơ</span>
+                        {% endif %}
+                    </p>
+                    <p class="card-text flex-grow-1">{{ product.description|truncatewords:15 }}</p>
+                    <div class="mt-auto">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="h5 text-success mb-0">{{ product.price|floatformat:0 }}đ/{{ product.unit }}</span>
+                            {% if product.stock_quantity > 0 %}
+                                <small class="text-success">Còn {{ product.stock_quantity }} {{ product.unit }}</small>
+                            {% else %}
+                                <small class="text-danger">Hết hàng</small>
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'food_store:product_detail' product.pk %}" class="btn btn-success w-100">
+                            <i class="fas fa-eye"></i> Xem chi tiết
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h4>Không tìm thấy sản phẩm nào</h4>
+                <p class="text-muted">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+                <a href="{% url 'food_store:product_list' %}" class="btn btn-success">
+                    Xem tất cả sản phẩm
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="Phân trang sản phẩm">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_store %}&store={{ current_store }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">
+                                Trước
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_store %}&store={{ current_store }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">
+                                    {{ num }}
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}{% if current_store %}&store={{ current_store }}{% endif %}{% if sort_by %}&sort={{ sort_by }}{% endif %}">
+                                Sau
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

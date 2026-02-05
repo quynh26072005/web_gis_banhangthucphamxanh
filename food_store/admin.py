@@ -1,320 +1,714 @@
 """
-Admin configuration for Clean Food Store
-Modern UI with Dashboard Statistics
+Admin configuration for Clean Food Store - Enhanced UI
 """
 from django.contrib import admin
-from django.contrib.admin import AdminSite
-from django.db import models
-from django.utils.html import mark_safe
+from django.utils.html import format_html
 from django.urls import reverse
-from django.utils.translation import gettext_lazy as _
-from django.db.models import Sum, Count
-from .models import Farm, Category, Product, Customer, Cart, CartItem, Order, OrderItem, DeliveryZone
+from django.utils.safestring import mark_safe
+from django.db.models import Count, Sum
+from django.contrib.admin import SimpleListFilter
+from .models import Farm, Category, Product, Customer, Order, OrderItem, DeliveryZone
 
 
-class CleanFoodAdminSite(AdminSite):
-    """Custom Admin Site with Dashboard Statistics"""
-    site_header = "Thực phẩm Sạch - Quản trị hệ thống"
-    site_title = "Clean Food Store Admin"
-    index_title = "Dashboard Quản Trị"
-    
-    def index(self, request, extra_context=None):
-        """Add statistics to admin dashboard"""
-        extra_context = extra_context or {}
-        
-        # Get statistics
-        extra_context['total_products'] = Product.objects.count()
-        extra_context['total_orders'] = Order.objects.count()
-        extra_context['total_customers'] = Customer.objects.count()
-        extra_context['total_farms'] = Farm.objects.count()
-        
-        # Get recent orders
-        extra_context['recent_orders'] = Order.objects.select_related(
-            'customer', 'customer__user'
-        ).order_by('-created_at')[:10]
-        
-        return super().index(request, extra_context)
+class StockLevelFilter(SimpleListFilter):
+    """Filter products by stock level"""
+    title = 'Mức tồn kho'
+    parameter_name = 'stock_level'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('high', 'Nhiều (>50)'),
+            ('medium', 'Trung bình (10-50)'),
+            ('low', 'Ít (<10)'),
+            ('out', 'Hết hàng'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'high':
+            return queryset.filter(stock_quantity__gt=50)
+        if self.value() == 'medium':
+            return queryset.filter(stock_quantity__gte=10, stock_quantity__lte=50)
+        if self.value() == 'low':
+            return queryset.filter(stock_quantity__gt=0, stock_quantity__lt=10)
+        if self.value() == 'out':
+            return queryset.filter(stock_quantity=0)
 
 
-# Create custom admin site instance
-admin_site = CleanFoodAdminSite(name='clean_food_admin')
+class OrderStatusFilter(SimpleListFilter):
+    """Filter orders by status"""
+    title = 'Trạng thái đơn hàng'
+    parameter_name = 'order_status'
 
-# Keep backward compatibility with default site headers
-admin.site.site_header = "Thực phẩm Sạch - Quản trị hệ thống"
-admin.site.site_title = "Clean Food Store Admin"
-admin.site.index_title = "Dashboard Quản Trị"
+    def lookups(self, request, model_admin):
+        return Order.STATUS_CHOICES
 
-
-class ProductInline(admin.TabularInline):
-    """Inline view for products in Farm"""
-    model = Product
-    extra = 0
-    fields = ('name', 'price', 'stock_quantity', 'is_available')
-    readonly_fields = ('price', 'stock_quantity')
-    show_change_link = True
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(status=self.value())
 
 
 @admin.register(Farm)
 class FarmAdmin(admin.ModelAdmin):
-    """Admin for Farm model"""
-    list_display = ['name', 'address', 'phone', 'is_organic_icon', 'created_at']
+    """Enhanced Admin for Farm model"""
+    list_display = ['name', 'address', 'phone', 'organic_status', 'products_count', 'created_at']
     list_filter = ['organic_certified', 'created_at']
-    search_fields = ['name', 'address', 'phone']
-    readonly_fields = ['created_at', 'updated_at']
-    inlines = [ProductInline]
+    search_fields = ['name', 'address', 'phone', 'email']
+    readonly_fields = ['created_at', 'updated_at', 'products_count']
     
     fieldsets = (
-        ('Thông tin chung', {
-            'fields': ('name', 'description')
+        ('Thông tin cơ bản', {
+            'fields': ('name', 'address', 'phone', 'email'),
+            'classes': ('wide',)
         }),
-        ('Liên hệ', {
-            'fields': ('address', 'phone', 'email')
+        ('Vị trí', {
+            'fields': ('latitude', 'longitude'),
+            'classes': ('collapse',)
         }),
-        ('Vị trí & Chứng nhận', {
-            'fields': (('latitude', 'longitude'), ('organic_certified', 'certification_number'))
+        ('Chứng nhận', {
+            'fields': ('organic_certified', 'certification_number'),
+            'classes': ('wide',)
+        }),
+        ('Mô tả', {
+            'fields': ('description',),
+            'classes': ('wide',)
+        }),
+        ('Thống kê', {
+            'fields': ('products_count',),
+            'classes': ('collapse',)
+        }),
+        ('Thời gian', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
         }),
     )
     
-    def is_organic_icon(self, obj):
+    def organic_status(self, obj):
         if obj.organic_certified:
-            return mark_safe('<span style="color:green">✔ Có chứng nhận</span>')
-        return mark_safe('<span style="color:gray">✘ Không</span>')
-    is_organic_icon.short_description = 'Hữu cơ'
+            return mark_safe(
+                '<span class="organic-badge"><i class="fas fa-store"></i> Hữu cơ</span>'
+            )
+        return mark_safe('<span style="color: #6c757d;">Thông thường</span>')
+    organic_status.short_description = 'Chứng nhận'
+    
+    def products_count(self, obj):
+        count = obj.product_set.count()
+        url = reverse('admin:food_store_product_changelist') + '?farm__id__exact={}'.format(obj.id)
+        return format_html('<a href="{}">{} sản phẩm</a>', url, count)
+    products_count.short_description = 'Số sản phẩm'
 
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    """Admin for Category model"""
-    list_display = ['name', 'image_preview', 'description']
-    search_fields = ['name']
+    """Enhanced Admin for Category model"""
+    list_display = ['name', 'description', 'products_count']
+    search_fields = ['name', 'description']
     
-    def image_preview(self, obj):
-        if obj.image:
-            return mark_safe(f'<img src="{obj.image.url}" width="50" height="50" style="object-fit:cover; border-radius: 4px;" />')
-        return "No Image"
-    image_preview.short_description = 'Hình ảnh'
+    def products_count(self, obj):
+        count = obj.product_set.count()
+        url = reverse('admin:food_store_product_changelist') + '?category__id__exact={}'.format(obj.id)
+        return format_html('<a href="{}">{} sản phẩm</a>', url, count)
+    products_count.short_description = 'Số sản phẩm'
 
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    """Admin for Product model"""
-    # Thay price_display bằng price để hỗ trợ list_editable
-    list_display = ['image_preview', 'name', 'category', 'farm', 'price', 'stock_quantity', 'is_available']
-    list_filter = ['category', 'farm', 'is_available', 'created_at']
-    search_fields = ['name', 'description']
+    """Enhanced Admin for Product model"""
+    list_display = ['name', 'category', 'farm_link', 'price_display', 'unit', 'stock_status', 'availability_status', 'is_available', 'created_at']
+    list_filter = ['category', 'farm', 'is_available', StockLevelFilter, 'created_at']
+    search_fields = ['name', 'description', 'farm__name']
     readonly_fields = ['created_at', 'updated_at']
-    list_editable = ['stock_quantity', 'is_available', 'price']
+    list_editable = ['is_available']
     
     fieldsets = (
-        ('Thông tin cơ bản', {
-            'fields': ('name', 'category', 'farm', 'description')
+        ('Thông tin sản phẩm', {
+            'fields': ('name', 'category', 'farm', 'description'),
+            'classes': ('wide',)
         }),
-        ('Giá và kho', {
-            'fields': ('price', 'unit', 'stock_quantity', 'is_available')
+        ('Giá và đơn vị', {
+            'fields': ('price', 'unit'),
+            'classes': ('wide',)
         }),
-        ('Hình ảnh và dinh dưỡng', {
-            'fields': ('image', 'nutritional_info')
+        ('Kho hàng', {
+            'fields': ('stock_quantity', 'is_available'),
+            'classes': ('wide',)
+        }),
+        ('Hình ảnh và thông tin bổ sung', {
+            'fields': ('image', 'nutritional_info'),
+            'classes': ('wide',)
         }),
         ('Thời gian', {
-            'fields': ('created_at', 'updated_at')
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
         }),
     )
     
-    def image_preview(self, obj):
-        if obj.image:
-            return mark_safe(f'<img src="{obj.image.url}" width="60" height="60" style="object-fit:cover; border-radius: 4px;" />')
-        return "No Image"
-    image_preview.short_description = 'Ảnh'
+    def farm_link(self, obj):
+        url = reverse('admin:food_store_farm_change', args=[obj.farm.id])
+        organic = '<i class="fas fa-store" style="color: #28a745;"></i>' if obj.farm.organic_certified else ''
+        return format_html('<a href="{}">{}</a> {}', url, obj.farm.name, organic)
+    farm_link.short_description = 'Cửa hàng'
+    
+    def price_display(self, obj):
+        return format_html('<span class="price-display">{} VNĐ</span>', "{:,.0f}".format(float(obj.price)))
+    price_display.short_description = 'Giá'
+    
+    def stock_status(self, obj):
+        if obj.stock_quantity == 0:
+            return mark_safe('<span class="stock-low">Hết hàng</span>')
+        elif obj.stock_quantity < 10:
+            return format_html('<span class="stock-low">{}</span>', obj.stock_quantity)
+        elif obj.stock_quantity < 50:
+            return format_html('<span class="stock-medium">{}</span>', obj.stock_quantity)
+        else:
+            return format_html('<span class="stock-high">{}</span>', obj.stock_quantity)
+    stock_status.short_description = 'Tồn kho'
+    
+    def availability_status(self, obj):
+        if obj.is_available:
+            return mark_safe('<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Có sẵn</span>')
+        return mark_safe('<span style="color: #dc3545;"><i class="fas fa-times-circle"></i> Không có</span>')
+    availability_status.short_description = 'Trạng thái'
 
 
 @admin.register(DeliveryZone)
 class DeliveryZoneAdmin(admin.ModelAdmin):
-    """Admin for DeliveryZone model"""
-    # Thay delivery_fee_display bằng delivery_fee để hỗ trợ list_editable
-    list_display = ['name', 'delivery_fee', 'delivery_time', 'is_active', 'area_description']
+    """Enhanced Admin for DeliveryZone model"""
+    list_display = ['name', 'delivery_fee_display', 'delivery_time', 'orders_count', 'status', 'is_active']
     list_filter = ['is_active']
-    search_fields = ['name']
-    list_editable = ['delivery_fee', 'is_active', 'delivery_time']
+    search_fields = ['name', 'area_description']
+    list_editable = ['is_active']
+    
+    def delivery_fee_display(self, obj):
+        return format_html('<span class="price-display">{} VNĐ</span>', "{:,.0f}".format(float(obj.delivery_fee)))
+    delivery_fee_display.short_description = 'Phí giao hàng'
+    
+    def orders_count(self, obj):
+        from .models import Order
+        count = Order.objects.filter(delivery_zone=obj).count()
+        url = reverse('admin:food_store_order_changelist') + '?delivery_zone__id__exact={}'.format(obj.id)
+        return format_html('<a href="{}">{} đơn hàng</a>', url, count)
+    orders_count.short_description = 'Số đơn hàng'
+    
+    def status(self, obj):
+        from django.utils.safestring import mark_safe
+        if obj.is_active:
+            return mark_safe('<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Hoạt động</span>')
+        else:
+            return mark_safe('<span style="color: #dc3545;"><i class="fas fa-times-circle"></i> Tạm dừng</span>')
+    status.short_description = 'Trạng thái'
 
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
-    """Admin for Customer model"""
-    list_display = ['user_info', 'phone', 'address', 'created_at']
-    search_fields = ['user__username', 'user__email', 'phone']
-    readonly_fields = ['created_at']
+    """Enhanced Admin for Customer model"""
+    list_display = ['user_info', 'phone', 'address', 'orders_count', 'total_spent', 'created_at']
+    search_fields = ['user__username', 'user__email', 'phone', 'address']
+    readonly_fields = ['created_at', 'orders_count', 'total_spent']
     
     def user_info(self, obj):
-        return f"{obj.user.username} ({obj.user.email})"
-    user_info.short_description = "Tài khoản"
-
-
-class CartItemInline(admin.TabularInline):
-    model = CartItem
-    extra = 0
-    readonly_fields = ['total_price']
-
-
-@admin.register(Cart)
-class CartAdmin(admin.ModelAdmin):
-    """Admin for Cart model"""
-    list_display = ['customer', 'get_total_items', 'get_total_amount', 'updated_at']
-    readonly_fields = ['created_at', 'updated_at']
-    inlines = [CartItemInline]
+        return format_html(
+            '<strong>{}</strong><br><small>{}</small>',
+            obj.user.get_full_name() or obj.user.username,
+            obj.user.email
+        )
+    user_info.short_description = 'Thông tin người dùng'
     
-    def get_total_items(self, obj):
-        return obj.items.aggregate(total=models.Sum('quantity'))['total'] or 0
-    get_total_items.short_description = "Tổng số lượng"
-
-    def get_total_amount(self, obj):
-        # Calculate in python to avoid complex annotations if simple
-        total = 0
-        for item in obj.items.all():
-            if item.product and item.product.price:
-                total += item.quantity * item.product.price
-        return f"{total:,.0f} đ"
-    get_total_amount.short_description = "Tổng tiền"
+    def orders_count(self, obj):
+        count = obj.order_set.count()
+        url = reverse('admin:food_store_order_changelist') + '?customer__id__exact={}'.format(obj.id)
+        return format_html('<a href="{}">{} đơn hàng</a>', url, count)
+    orders_count.short_description = 'Số đơn hàng'
+    
+    def total_spent(self, obj):
+        total = obj.order_set.aggregate(total=Sum('total_amount'))['total'] or 0
+        return format_html('<span class="price-display">{} VNĐ</span>', "{:,.0f}".format(float(total)))
+    total_spent.short_description = 'Tổng chi tiêu'
 
 
 class OrderItemInline(admin.TabularInline):
+    """Inline for Order Items"""
     model = OrderItem
     extra = 0
-    # Use fields that definitely exist. total_price might be property.
-    # Check OrderItem model: quantity, price. 
-    fields = ['product', 'quantity', 'price'] 
-    readonly_fields = ['price']
+    readonly_fields = ['total_price']
     
-    # If total_price is a property in model, we can add it to readonly
-    # But safer to remove if unsure.
-    
+    def total_price(self, obj):
+        if obj.pk:
+            return format_html('<span class="price-display">{} VNĐ</span>', "{:,.0f}".format(float(obj.total_price)))
+        return '-'
+    total_price.short_description = 'Thành tiền'
+
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    """Admin for Order model"""
-    list_display = ['id', 'customer_link', 'status_colored', 'assigned_farm_display', 'total_amount_display', 'created_at', 'delivery_zone']
-    list_filter = ['status', 'created_at', 'delivery_zone', 'assigned_farm']
-    # Removed 'id' from search_fields to prevent Postgres integer error
-    search_fields = ['customer__user__username', 'delivery_address'] 
-    readonly_fields = ['created_at', 'updated_at', 'show_route_map']
+    """Enhanced Admin for Order model"""
+    list_display = ['order_id', 'customer_info', 'status_display', 'total_amount_display', 'delivery_zone', 'status', 'created_at']
+    list_filter = [OrderStatusFilter, 'delivery_zone', 'created_at']
+    search_fields = ['customer__user__username', 'customer__user__email', 'delivery_address']
+    readonly_fields = ['created_at', 'updated_at', 'items_summary', 'delivery_route_map']
+    list_editable = ['status']
     inlines = [OrderItemInline]
-    actions = ['mark_as_confirmed', 'mark_as_shipping', 'mark_as_delivered', 'recalculate_route']
     
     fieldsets = (
         ('Thông tin đơn hàng', {
-            'fields': ('customer', 'status', 'created_at')
+            'fields': ('customer', 'status'),
+            'classes': ('wide',)
         }),
         ('Thông tin giao hàng', {
-            'fields': ('delivery_address', ('delivery_latitude', 'delivery_longitude'), 'delivery_zone', 'assigned_farm')
+            'fields': ('delivery_address', 'delivery_latitude', 'delivery_longitude', 'delivery_zone', 'assigned_farm'),
+            'classes': ('wide',)
         }),
-        ('Bản đồ Route', {
-            'fields': ('show_route_map',),
-            'classes': ('wide',),
-            'description': 'Đường đi từ trang trại đến khách hàng'
+        ('Đường đi giao hàng', {
+            'fields': ('delivery_route_map',),
+            'classes': ('wide',)
         }),
         ('Thông tin thanh toán', {
-            'fields': (('subtotal', 'delivery_fee', 'total_amount'),)
+            'fields': ('subtotal', 'delivery_fee', 'total_amount'),
+            'classes': ('wide',)
+        }),
+        ('Sản phẩm', {
+            'fields': ('items_summary',),
+            'classes': ('wide',)
+        }),
+        ('Thời gian', {
+            'fields': ('created_at', 'updated_at', 'delivered_at'),
+            'classes': ('collapse',)
         }),
         ('Ghi chú', {
-            'fields': ('notes', 'delivered_at')
+            'fields': ('notes',),
+            'classes': ('wide',)
         }),
     )
     
-    def customer_link(self, obj):
-        if obj.customer:
-            url = reverse('admin:food_store_customer_change', args=[obj.customer.id])
-            return mark_safe(f'<a href="{url}">{obj.customer}</a>')
-        return "-"
-    customer_link.short_description = "Khách hàng"
+    def order_id(self, obj):
+        return format_html('<strong>#{}</strong>', obj.id)
+    order_id.short_description = 'Mã đơn hàng'
+    
+    def customer_info(self, obj):
+        return format_html(
+            '<strong>{}</strong><br><small>{}</small>',
+            obj.customer.user.get_full_name() or obj.customer.user.username,
+            obj.customer.phone
+        )
+    customer_info.short_description = 'Khách hàng'
+    
+    def status_display(self, obj):
+        status_colors = {
+            'pending': 'warning',
+            'confirmed': 'info',
+            'preparing': 'primary',
+            'shipping': 'info',
+            'delivered': 'success',
+            'cancelled': 'danger',
+        }
+        color = status_colors.get(obj.status, 'secondary')
+        return format_html(
+            '<span class="status-badge status-{}">{}</span>',
+            obj.status, obj.get_status_display()
+        )
+    status_display.short_description = 'Trạng thái'
     
     def total_amount_display(self, obj):
-        return f"{obj.total_amount:,.0f} đ"
-    total_amount_display.short_description = "Tổng cộng"
+        return format_html('<span class="price-display">{} VNĐ</span>', "{:,.0f}".format(float(obj.total_amount)))
+    total_amount_display.short_description = 'Tổng tiền'
     
-    def status_colored(self, obj):
-        colors = {
-            'pending': 'orange',
-            'confirmed': 'blue',
-            'preparing': 'purple',
-            'shipping': '#17a2b8',
-            'delivered': 'green',
-            'cancelled': 'red'
-        }
-        color = colors.get(obj.status, 'black')
-        # Handle choice display safe way
-        display = obj.get_status_display() if hasattr(obj, 'get_status_display') else obj.status
-        return mark_safe(f'<span style="color: {color}; font-weight: bold;">{display.upper()}</span>')
-    status_colored.short_description = "Trạng thái"
-
-    # Actions
-    def mark_as_confirmed(self, request, queryset):
-        queryset.update(status='confirmed')
-    mark_as_confirmed.short_description = "Đánh dấu: Đã xác nhận"
-
-    def mark_as_shipping(self, request, queryset):
-        queryset.update(status='shipping')
-    mark_as_shipping.short_description = "Đánh dấu: Đang giao hàng"
+    def items_summary(self, obj):
+        if obj.pk:
+            items = obj.items.all()
+            summary = []
+            for item in items:
+                summary.append(f"{item.product.name} x {item.quantity}")
+            return mark_safe('<br>'.join(summary))
+        return '-'
+    items_summary.short_description = 'Sản phẩm đã đặt'
     
-    def mark_as_delivered(self, request, queryset):
-        from django.utils import timezone
-        queryset.update(status='delivered', delivered_at=timezone.now())
-    mark_as_delivered.short_description = "Đánh dấu: Đã giao hàng"
-    
-    def recalculate_route(self, request, queryset):
-        """Admin action để tính lại route cho các đơn hàng được chọn"""
-        updated_count = 0
-        for order in queryset:
-            if order.auto_assign_nearest_farm():
-                order.save()
-                updated_count += 1
+    def delivery_route_map(self, obj):
+        """Hiển thị bản đồ với đường đi giao hàng thực tế"""
+        if not obj.assigned_farm or not obj.delivery_latitude or not obj.delivery_longitude:
+            return mark_safe('<span style="color: #6c757d;">Chưa có thông tin giao hàng hoặc chưa gán cửa hàng</span>')
         
-        self.message_user(request, f"Đã tính lại route cho {updated_count} đơn hàng")
-    recalculate_route.short_description = "🔄 Tính lại route giao hàng"
-    
-    # Display methods
-    def assigned_farm_display(self, obj):
-        """Hiển thị farm được gán với icon"""
-        if obj.assigned_farm:
-            return mark_safe(f'<span style="color: green;">✓ {obj.assigned_farm.name}</span>')
-        return mark_safe('<span style="color: orange;">⚠ Chưa gán</span>')
-    assigned_farm_display.short_description = "Trang trại"
-    
-    def show_route_map(self, obj):
-        """Hiển thị bản đồ route giao hàng trong admin"""
-        if not obj.id:
-            return "Chưa có bản đồ (lưu đơn hàng trước)"
+        # Kiểm tra tọa độ farm
+        if not obj.assigned_farm.latitude or not obj.assigned_farm.longitude:
+            return mark_safe('<span style="color: #dc3545;">Cửa hàng chưa có tọa độ GPS</span>')
         
-        if not obj.delivery_latitude or not obj.delivery_longitude:
-            return mark_safe('<p style="color: orange;">⚠ Chưa có tọa độ giao hàng</p>')
+        # Tạo HTML cho bản đồ với route - Version đơn giản để debug
+        map_html = f"""
+        <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
+            <h5 style="margin: 0 0 10px 0; color: #007bff;">
+                <i class="fas fa-route"></i> Thông tin đường đi giao hàng
+            </h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <p style="margin: 5px 0;">
+                        <i class="fas fa-tractor" style="color: #28a745;"></i> 
+                        <strong>Từ cửa hàng:</strong> {obj.assigned_farm.name}<br>
+                        <small>📍 {obj.assigned_farm.latitude}, {obj.assigned_farm.longitude}</small>
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p style="margin: 5px 0;">
+                        <i class="fas fa-store" style="color: #dc3545;"></i> 
+                        <strong>Đến khách hàng:</strong><br>
+                        <small>📍 {obj.delivery_latitude}, {obj.delivery_longitude}</small><br>
+                        <small>📍 {obj.delivery_address}</small>
+                    </p>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-4">
+                    <span style="background: #e3f2fd; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                        <i class="fas fa-route" style="color: #1976d2;"></i> 
+                        {obj.delivery_distance_km or 'N/A'} km
+                    </span>
+                </div>
+                <div class="col-md-4">
+                    <span style="background: #fff3e0; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                        <i class="fas fa-clock" style="color: #f57c00;"></i> 
+                        {obj.delivery_duration_min or 'N/A'} phút
+                    </span>
+                </div>
+                <div class="col-md-4">
+                    <span style="background: #e8f5e8; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                        <i class="fas fa-money-bill" style="color: #388e3c;"></i> 
+                        {obj.delivery_fee or 'N/A'} VNĐ
+                    </span>
+                </div>
+            </div>
+        </div>
         
-        if not obj.assigned_farm:
-            return mark_safe('<p style="color: orange;">⚠ Chưa có trang trại được gán. Hãy lưu đơn hàng để tự động gán.</p>')
+        <div id="delivery-route-map-{obj.id}" style="height: 400px; width: 100%; border: 1px solid #ddd; border-radius: 8px; position: relative;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 1000;">
+                <i class="fas fa-spinner fa-spin fa-2x" style="color: #007bff;"></i>
+                <p style="margin: 10px 0 0 0; color: #666;">Đang tải bản đồ...</p>
+            </div>
+        </div>
         
-        try:
-            from gis_tools.gis_functions import MapGenerator
-            route_map = MapGenerator.create_order_tracking_map(obj.id)
+        <div style="margin-top: 10px; text-align: center;">
+            <a href="https://www.google.com/maps/dir/{obj.assigned_farm.latitude},{obj.assigned_farm.longitude}/{obj.delivery_latitude},{obj.delivery_longitude}" 
+               target="_blank" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-external-link-alt"></i> Xem trên Google Maps
+            </a>
+        </div>
+        
+        <script>
+        console.log('🗺️ Initializing delivery route map for Order #{obj.id}');
+        
+        document.addEventListener('DOMContentLoaded', function() {{
+            console.log('📍 DOM loaded, checking for Leaflet...');
             
-            if route_map:
-                map_html = route_map._repr_html_()
-                # Wrap in container for better display
-                return mark_safe(f'''
-                    <div style="margin: 10px 0;">
-                        <h4 style="color: #4CAF50;">📍 Route: {obj.assigned_farm.name} → Khách hàng</h4>
-                        <div style="border: 2px solid #ddd; border-radius: 8px; overflow: hidden;">
-                            {map_html}
-                        </div>
-                        <p style="margin-top: 10px; color: #666;">
-                            <em>Đường đi được tính tự động dựa trên trang trại gần nhất</em>
-                        </p>
+            if (typeof L === 'undefined') {{
+                console.error('❌ Leaflet not loaded!');
+                document.getElementById('delivery-route-map-{obj.id}').innerHTML = 
+                    '<div style="padding: 20px; text-align: center; color: #dc3545; background: #f8d7da; border-radius: 4px;">' +
+                    '<i class="fas fa-exclamation-triangle"></i> Lỗi: Leaflet library chưa được tải' +
+                    '</div>';
+                return;
+            }}
+            
+            console.log('✅ Leaflet loaded, initializing map...');
+            
+            try {{
+                const mapId = 'delivery-route-map-{obj.id}';
+                const mapContainer = document.getElementById(mapId);
+                
+                if (!mapContainer) {{
+                    console.error('❌ Map container not found:', mapId);
+                    return;
+                }}
+                
+                // Clear loading message
+                mapContainer.innerHTML = '';
+                
+                // Initialize map
+                const map = L.map(mapId, {{
+                    zoomControl: true,
+                    scrollWheelZoom: true
+                }});
+                
+                // Add tiles
+                L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 18
+                }}).addTo(map);
+                
+                // Farm marker
+                const farmMarker = L.marker([{obj.assigned_farm.latitude}, {obj.assigned_farm.longitude}], {{
+                    title: 'Cửa hàng: {obj.assigned_farm.name}'
+                }}).addTo(map);
+                
+                farmMarker.bindPopup(`
+                    <div style="text-align: center; min-width: 200px;">
+                        <h6 style="margin: 0 0 8px 0; color: #28a745;">
+                            <i class="fas fa-tractor"></i> Cửa hàng
+                        </h6>
+                        <strong>{obj.assigned_farm.name}</strong><br>
+                        <small style="color: #666;">
+                            📍 {obj.assigned_farm.latitude}, {obj.assigned_farm.longitude}
+                        </small>
                     </div>
-                ''')
-            else:
-                return mark_safe('<p style="color: red;">❌ Không thể tạo bản đồ</p>')
-        except Exception as e:
-            return mark_safe(f'<p style="color: red;">❌ Lỗi: {str(e)}</p>')
-    
-    show_route_map.short_description = "Bản đồ Route giao hàng"
+                `);
+                
+                // Customer marker
+                const customerMarker = L.marker([{obj.delivery_latitude}, {obj.delivery_longitude}], {{
+                    title: 'Khách hàng'
+                }}).addTo(map);
+                
+                customerMarker.bindPopup(`
+                    <div style="text-align: center; min-width: 200px;">
+                        <h6 style="margin: 0 0 8px 0; color: #dc3545;">
+                            <i class="fas fa-store"></i> Khách hàng
+                        </h6>
+                        <strong>{obj.delivery_address}</strong><br>
+                        <small style="color: #666;">
+                            📍 {obj.delivery_latitude}, {obj.delivery_longitude}
+                        </small>
+                    </div>
+                `);
+                
+                // Draw simple line between points
+                const routeLine = L.polyline([
+                    [{obj.assigned_farm.latitude}, {obj.assigned_farm.longitude}],
+                    [{obj.delivery_latitude}, {obj.delivery_longitude}]
+                ], {{
+                    color: '#007bff',
+                    weight: 3,
+                    opacity: 0.7,
+                    dashArray: '10, 5'
+                }}).addTo(map);
+                
+                // Fit map to show both points
+                const group = new L.featureGroup([farmMarker, customerMarker, routeLine]);
+                map.fitBounds(group.getBounds().pad(0.1));
+                
+                console.log('✅ Map initialized successfully!');
+                
+                // Try to get real route
+                setTimeout(() => {{
+                    console.log('🛣️ Attempting to get real route...');
+                    getRealRoute(map, {obj.assigned_farm.latitude}, {obj.assigned_farm.longitude}, {obj.delivery_latitude}, {obj.delivery_longitude});
+                }}, 1000);
+                
+            }} catch (error) {{
+                console.error('❌ Error initializing map:', error);
+                document.getElementById('delivery-route-map-{obj.id}').innerHTML = 
+                    '<div style="padding: 20px; text-align: center; color: #dc3545; background: #f8d7da; border-radius: 4px;">' +
+                    '<i class="fas fa-exclamation-triangle"></i> Lỗi tải bản đồ: ' + error.message +
+                    '</div>';
+            }}
+        }});
+        
+        // Function to get real route
+        function getRealRoute(map, farmLat, farmLng, customerLat, customerLng) {{
+            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${{farmLng}},${{farmLat}};${{customerLng}},${{customerLat}}?overview=full&geometries=geojson`;
+            
+            fetch(osrmUrl)
+                .then(response => response.json())
+                .then(data => {{
+                    if (data.routes && data.routes.length > 0) {{
+                        const route = data.routes[0];
+                        const routeCoordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                        
+                        // Remove old simple line
+                        map.eachLayer(layer => {{
+                            if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {{
+                                map.removeLayer(layer);
+                            }}
+                        }});
+                        
+                        // Add real route
+                        const realRoute = L.polyline(routeCoordinates, {{
+                            color: '#28a745',
+                            weight: 4,
+                            opacity: 0.8
+                        }}).addTo(map);
+                        
+                        // Add route info
+                        const midPoint = routeCoordinates[Math.floor(routeCoordinates.length / 2)];
+                        L.popup({{
+                            closeButton: false,
+                            autoClose: false,
+                            closeOnClick: false
+                        }})
+                        .setLatLng(midPoint)
+                        .setContent(`
+                            <div style="text-align: center; font-size: 12px;">
+                                <strong><i class="fas fa-route"></i> Đường đi thực tế</strong><br>
+                                <span style="color: #28a745;">
+                                    ${{(route.distance / 1000).toFixed(1)}} km - ${{Math.round(route.duration / 60)}} phút
+                                </span>
+                            </div>
+                        `)
+                        .addTo(map);
+                        
+                        console.log('✅ Real route loaded successfully!');
+                    }} else {{
+                        console.log('⚠️ No route found, keeping simple line');
+                    }}
+                }})
+                .catch(error => {{
+                    console.log('⚠️ Route API failed, keeping simple line:', error);
+                }});
+        }}
+        </script>
+        """
+        return mark_safe(map_html)
+    delivery_route_map.short_description = 'Đường đi giao hàng'
 
-    def mark_as_delivered(self, request, queryset):
-        from django.utils import timezone
-        queryset.update(status='delivered', delivered_at=timezone.now())
-    mark_as_delivered.short_description = "Đánh dấu: Đã giao hàng"
+
+# Cart and CartItem admin classes removed as requested
+
+
+@admin.register(OrderItem)
+class OrderItemAdmin(admin.ModelAdmin):
+    """Enhanced Admin for OrderItem model"""
+    list_display = ['order_id', 'product', 'quantity', 'price_display', 'total_price_display']
+    readonly_fields = ['total_price_display']
+    
+    def order_id(self, obj):
+        url = reverse('admin:food_store_order_change', args=[obj.order.id])
+        return format_html('<a href="{}">#{}</a>', url, obj.order.id)
+    order_id.short_description = 'Đơn hàng'
+    
+    def price_display(self, obj):
+        return format_html('<span class="price-display">{} VNĐ</span>', "{:,.0f}".format(float(obj.price)))
+    price_display.short_description = 'Đơn giá'
+    
+    def total_price_display(self, obj):
+        return format_html('<span class="price-display">{} VNĐ</span>', "{:,.0f}".format(float(obj.total_price)))
+    total_price_display.short_description = 'Thành tiền'
+
+
+# Customize Admin Site
+admin.site.site_header = "Clean Food GIS Admin"
+admin.site.site_title = "Clean Food Admin"
+admin.site.index_title = "Dashboard Quản Trị"
+
+# Custom Admin Actions
+def mark_orders_as_confirmed(modeladmin, request, queryset):
+    """Mark selected orders as confirmed"""
+    updated = queryset.update(status='confirmed')
+    modeladmin.message_user(request, f'{updated} đơn hàng đã được xác nhận.')
+mark_orders_as_confirmed.short_description = "Xác nhận đơn hàng đã chọn"
+
+def mark_orders_as_shipping(modeladmin, request, queryset):
+    """Mark selected orders as shipping"""
+    updated = queryset.update(status='shipping')
+    modeladmin.message_user(request, f'{updated} đơn hàng đã chuyển sang trạng thái giao hàng.')
+mark_orders_as_shipping.short_description = "Chuyển sang giao hàng"
+
+def mark_orders_as_delivered(modeladmin, request, queryset):
+    """Mark selected orders as delivered"""
+    from django.utils import timezone
+    updated = queryset.update(status='delivered', delivered_at=timezone.now())
+    modeladmin.message_user(request, f'{updated} đơn hàng đã được giao thành công.')
+mark_orders_as_delivered.short_description = "Đánh dấu đã giao hàng"
+
+def mark_products_as_available(modeladmin, request, queryset):
+    """Mark selected products as available"""
+    updated = queryset.update(is_available=True)
+    modeladmin.message_user(request, f'{updated} sản phẩm đã được đánh dấu có sẵn.')
+mark_products_as_available.short_description = "Đánh dấu có sẵn"
+
+def mark_products_as_unavailable(modeladmin, request, queryset):
+    """Mark selected products as unavailable"""
+    updated = queryset.update(is_available=False)
+    modeladmin.message_user(request, f'{updated} sản phẩm đã được đánh dấu không có sẵn.')
+mark_products_as_unavailable.short_description = "Đánh dấu không có sẵn"
+
+# Add actions to admin classes
+OrderAdmin.actions = [mark_orders_as_confirmed, mark_orders_as_shipping, mark_orders_as_delivered]
+ProductAdmin.actions = [mark_products_as_available, mark_products_as_unavailable]
+
+# Export CSV Actions
+import csv
+from django.http import HttpResponse
+
+def export_orders_csv(modeladmin, request, queryset):
+    """Export selected orders to CSV"""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="orders.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'Mã đơn hàng', 'Khách hàng', 'Email', 'Điện thoại', 
+        'Trạng thái', 'Địa chỉ giao hàng', 'Tổng tiền', 
+        'Phí giao hàng', 'Ngày đặt', 'Ghi chú'
+    ])
+    
+    for order in queryset:
+        writer.writerow([
+            order.id,
+            order.customer.user.get_full_name() or order.customer.user.username,
+            order.customer.user.email,
+            order.customer.phone,
+            order.get_status_display(),
+            order.delivery_address,
+            order.total_amount,
+            order.delivery_fee,
+            order.created_at.strftime('%d/%m/%Y %H:%M'),
+            order.notes
+        ])
+    
+    return response
+export_orders_csv.short_description = "Xuất CSV đơn hàng đã chọn"
+
+def export_products_csv(modeladmin, request, queryset):
+    """Export selected products to CSV"""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="products.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'Tên sản phẩm', 'Danh mục', 'Cửa hàng', 'Giá', 
+        'Đơn vị', 'Tồn kho', 'Có sẵn', 'Hữu cơ', 'Ngày tạo'
+    ])
+    
+    for product in queryset:
+        writer.writerow([
+            product.name,
+            product.category.name,
+            product.farm.name,
+            product.price,
+            product.unit,
+            product.stock_quantity,
+            'Có' if product.is_available else 'Không',
+            'Có' if product.farm.organic_certified else 'Không',
+            product.created_at.strftime('%d/%m/%Y')
+        ])
+    
+    return response
+export_products_csv.short_description = "Xuất CSV sản phẩm đã chọn"
+
+def export_customers_csv(modeladmin, request, queryset):
+    """Export selected customers to CSV"""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="customers.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'Tên đăng nhập', 'Họ tên', 'Email', 'Điện thoại', 
+        'Địa chỉ', 'Số đơn hàng', 'Tổng chi tiêu', 'Ngày đăng ký'
+    ])
+    
+    for customer in queryset:
+        total_orders = customer.order_set.count()
+        total_spent = sum(order.total_amount for order in customer.order_set.all())
+        
+        writer.writerow([
+            customer.user.username,
+            customer.user.get_full_name() or '',
+            customer.user.email,
+            customer.phone,
+            customer.address,
+            total_orders,
+            total_spent,
+            customer.created_at.strftime('%d/%m/%Y')
+        ])
+    
+    return response
+export_customers_csv.short_description = "Xuất CSV khách hàng đã chọn"
+
+# Add export actions
+OrderAdmin.actions.extend([export_orders_csv])
+ProductAdmin.actions.extend([export_products_csv])
+CustomerAdmin.actions = [export_customers_csv]
+# Custom dashboard functionality removed for minimal version

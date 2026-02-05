@@ -3,28 +3,314 @@
 
 {% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
 
+{% block nav-global %}
+{{ block.super }}
+{% if user.is_superuser %}
+<div style="background: #dc3545; padding: 10px; text-align: center;">
+    <a href="/admin/analytics/" style="color: white; text-decoration: none; font-weight: bold; margin: 0 15px;">
+        <i class="fas fa-chart-line"></i> Dashboard Phân tích
+    </a>
+    <a href="/admin/reports/" style="color: white; text-decoration: none; font-weight: bold; margin: 0 15px;">
+        <i class="fas fa-file-alt"></i> Báo cáo
+    </a>
+    <a href="/admin/export/" style="color: white; text-decoration: none; font-weight: bold; margin: 0 15px;">
+        <i class="fas fa-download"></i> Xuất dữ liệu
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
 {% block extrastyle %}
 {{ block.super }}
-<link rel="stylesheet" type="text/css" href="{% static 'css/custom_admin.css' %}?v=9">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="{% static 'css/admin_fixes.css' %}?v=2">
+<link rel="stylesheet" type="text/css" href="{% static 'css/admin_enhanced.css' %}?v=2">
+<link rel="stylesheet" type="text/css" href="{% static 'admin/css/custom_admin.css' %}?v=2">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Leaflet CSS for maps -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+/* Critical inline styles for immediate effect */
+body.admin {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    background: #f5f7fa !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
+}
+
+#header {
+    background: linear-gradient(135deg, #2d5a27 0%, #28a745 50%, #20c997 100%) !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+    margin-left: 300px !important;
+    color: white !important;
+    border-bottom: none !important;
+    transition: margin-left 0.3s ease !important;
+}
+
+#nav-sidebar {
+    background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%) !important;
+    width: 300px !important;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.1) !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+    z-index: 999 !important;
+    border-right: none !important;
+    transition: transform 0.3s ease !important;
+}
+
+#main {
+    margin-left: 300px !important;
+    background: #f5f7fa !important;
+    padding: 30px !important;
+    min-height: 100vh !important;
+    transition: margin-left 0.3s ease !important;
+}
+
+#content {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.breadcrumbs {
+    background: white !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05) !important;
+    padding: 20px 25px !important;
+    margin: 20px 0 !important;
+    border: 1px solid #e9ecef !important;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    #nav-sidebar {
+        width: 280px !important;
+        transform: translateX(-100%) !important;
+        transition: transform 0.3s ease !important;
+    }
+    
+    #nav-sidebar.show {
+        transform: translateX(0) !important;
+    }
+    
+    #main {
+        margin-left: 0 !important;
+        padding: 15px !important;
+    }
+    
+    #header {
+        margin-left: 0 !important;
+    }
+}
+</style>
 {% endblock %}
 
 {% block extrahead %}
 {{ block.super }}
-<link rel="stylesheet" type="text/css" href="{% static 'css/custom_admin.css' %}?v=9">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Leaflet JS for maps -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<!-- Delivery Route Map JS -->
+<script src="{% static 'js/delivery_route_map.js' %}?v=1"></script>
+<script src="{% static 'js/admin_enhanced.js' %}?v=2"></script>
+<script>
+// Enhanced mobile menu toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Admin interface loading...');
+    
+    // Create mobile menu toggle button for mobile devices
+    function createMobileToggle() {
+        if (window.innerWidth <= 768 && !document.querySelector('.mobile-menu-toggle')) {
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'mobile-menu-toggle';
+            toggleBtn.innerHTML = '☰';
+            toggleBtn.setAttribute('aria-label', 'Toggle navigation menu');
+            toggleBtn.setAttribute('type', 'button');
+            toggleBtn.style.cssText = `
+                position: fixed !important;
+                top: 20px !important;
+                left: 20px !important;
+                z-index: 1001 !important;
+                background: #28a745 !important;
+                color: white !important;
+                border: none !important;
+                border-radius: 50% !important;
+                width: 50px !important;
+                height: 50px !important;
+                font-size: 1.2em !important;
+                cursor: pointer !important;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.2) !important;
+                transition: all 0.3s ease !important;
+                display: block !important;
+            `;
+            
+            document.body.appendChild(toggleBtn);
+            
+            toggleBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const sidebar = document.getElementById('nav-sidebar');
+                if (sidebar) {
+                    const isOpen = sidebar.classList.contains('show');
+                    
+                    if (isOpen) {
+                        sidebar.classList.remove('show');
+                        this.innerHTML = '☰';
+                        this.setAttribute('aria-expanded', 'false');
+                        this.style.background = '#28a745';
+                    } else {
+                        sidebar.classList.add('show');
+                        this.innerHTML = '✕';
+                        this.setAttribute('aria-expanded', 'true');
+                        this.style.background = '#dc3545';
+                    }
+                }
+            });
+            
+            // Add hover effect
+            toggleBtn.addEventListener('mouseenter', function() {
+                if (!document.getElementById('nav-sidebar').classList.contains('show')) {
+                    this.style.background = '#20c997';
+                    this.style.transform = 'scale(1.1)';
+                }
+            });
+            
+            toggleBtn.addEventListener('mouseleave', function() {
+                if (!document.getElementById('nav-sidebar').classList.contains('show')) {
+                    this.style.background = '#28a745';
+                    this.style.transform = 'scale(1)';
+                }
+            });
+            
+            console.log('✅ Mobile toggle created');
+        }
+    }
+    
+    // Close sidebar when clicking outside
+    function setupOutsideClick() {
+        document.addEventListener('click', function(e) {
+            const sidebar = document.getElementById('nav-sidebar');
+            const toggleBtn = document.querySelector('.mobile-menu-toggle');
+            
+            if (sidebar && sidebar.classList.contains('show') && 
+                !sidebar.contains(e.target) && 
+                e.target !== toggleBtn &&
+                !toggleBtn.contains(e.target)) {
+                
+                sidebar.classList.remove('show');
+                if (toggleBtn) {
+                    toggleBtn.innerHTML = '☰';
+                    toggleBtn.setAttribute('aria-expanded', 'false');
+                    toggleBtn.style.background = '#28a745';
+                }
+            }
+        });
+    }
+    
+    // Handle window resize
+    function handleResize() {
+        const existingToggle = document.querySelector('.mobile-menu-toggle');
+        
+        if (window.innerWidth <= 768) {
+            if (!existingToggle) {
+                createMobileToggle();
+            }
+        } else {
+            if (existingToggle) {
+                existingToggle.remove();
+            }
+            
+            // Ensure sidebar is visible on desktop
+            const sidebar = document.getElementById('nav-sidebar');
+            if (sidebar) {
+                sidebar.classList.remove('show');
+                sidebar.style.transform = '';
+            }
+        }
+    }
+    
+    // Initialize
+    createMobileToggle();
+    setupOutsideClick();
+    
+    // Handle resize events
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(handleResize, 250);
+    });
+    
+    // Handle escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const sidebar = document.getElementById('nav-sidebar');
+            const toggleBtn = document.querySelector('.mobile-menu-toggle');
+            
+            if (sidebar && sidebar.classList.contains('show')) {
+                sidebar.classList.remove('show');
+                if (toggleBtn) {
+                    toggleBtn.innerHTML = '☰';
+                    toggleBtn.setAttribute('aria-expanded', 'false');
+                    toggleBtn.style.background = '#28a745';
+                }
+            }
+        }
+    });
+    
+    // Add loading states to admin links
+    const adminLinks = document.querySelectorAll('a[href*="/admin/"]');
+    adminLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            if (!this.target || this.target === '_self') {
+                const icon = this.querySelector('i');
+                if (icon && !icon.classList.contains('fa-spinner')) {
+                    const originalClass = icon.className;
+                    icon.className = 'fas fa-spinner fa-spin';
+                    
+                    // Restore after 3 seconds if page hasn't loaded
+                    setTimeout(() => {
+                        if (icon.classList.contains('fa-spinner')) {
+                            icon.className = originalClass;
+                        }
+                    }, 3000);
+                }
+            }
+        });
+    });
+    
+    console.log('✅ Admin interface loaded successfully');
+});
+
+// Handle page visibility changes
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+        // Reset any loading states when page becomes visible
+        const spinners = document.querySelectorAll('.fa-spinner');
+        spinners.forEach(spinner => {
+            spinner.className = spinner.className.replace('fa-spinner fa-spin', 'fa-arrow-right');
+        });
+    }
+});
+</script>
 {% endblock %}
 
 {% block branding %}
-<div class="admin-branding">
-    <h1 id="site-name">
-        <a href="{% url 'admin:index' %}">
-            <span class="brand-icon">🌱</span>
+<div class="admin-branding" style="padding: 20px 30px; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+    <h1 id="site-name" style="margin: 0; font-size: 1.8em; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+        <a href="{% url 'admin:index' %}" style="color: white; text-decoration: none; display: flex; align-items: center; gap: 10px;">
+            <span class="brand-icon" style="font-size: 1.2em;">🌱</span>
             <span class="brand-text">Clean Food Admin</span>
         </a>
     </h1>
-    <p class="brand-subtitle">Hệ thống quản trị thực phẩm sạch</p>
+    <p class="brand-subtitle" style="margin: 5px 0 0 35px; opacity: 0.8; font-size: 0.9em;">Hệ thống quản trị thực phẩm sạch</p>
 </div>
 {% endblock %}
 
-{% block nav-global %}{% endblock %}
