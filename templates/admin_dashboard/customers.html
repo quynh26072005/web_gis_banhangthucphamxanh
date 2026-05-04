@@ -1,0 +1,77 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}Quản lý Khách hàng{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Quản lý Khách hàng</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Danh sách khách hàng</h3>
+                <div class="card-tools">
+                    <a href="{% url 'food_store:admin_customer_create' %}" class="btn btn-sm btn-success mr-2">
+                        <i class="fas fa-plus"></i> Thêm mới
+                    </a>
+                    <form method="get" class="form-inline d-inline">
+                        <input type="text" name="search" class="form-control form-control-sm" placeholder="Tìm kiếm..." value="{{ search }}">
+                        <button type="submit" class="btn btn-sm btn-primary ml-2">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover text-nowrap">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tên đăng nhập</th>
+                            <th>Họ tên</th>
+                            <th>Email</th>
+                            <th>Số điện thoại</th>
+                            <th>Địa chỉ</th>
+                            <th>Ngày tạo</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for customer in customers %}
+                        <tr>
+                            <td>{{ customer.id }}</td>
+                            <td>{{ customer.user.username }}</td>
+                            <td>{{ customer.user.get_full_name|default:"-" }}</td>
+                            <td>{{ customer.user.email|default:"-" }}</td>
+                            <td>{{ customer.phone }}</td>
+                            <td>{{ customer.address|truncatewords:10 }}</td>
+                            <td>{{ customer.created_at|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'food_store:admin_customer_edit' customer.id %}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'food_store:admin_customer_delete' customer.id %}" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">Chưa có khách hàng nào</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

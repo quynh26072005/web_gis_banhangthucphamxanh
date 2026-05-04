@@ -1,0 +1,152 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}Báo cáo Thống kê{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Báo cáo Thống kê</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <!-- Thống kê theo ngày -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Đơn hàng 7 ngày gần nhất</h3>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Ngày</th>
+                            <th>Số đơn hàng</th>
+                            <th>Doanh thu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in daily_orders %}
+                        <tr>
+                            <td>{{ item.date|date:"d/m/Y" }}</td>
+                            <td>{{ item.count }}</td>
+                            <td>{{ item.revenue|floatformat:0 }} VNĐ</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center">Chưa có dữ liệu</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Thống kê trạng thái đơn hàng -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Thống kê theo trạng thái</h3>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Trạng thái</th>
+                                    <th>Số lượng</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order_status_stats %}
+                                <tr>
+                                    <td>
+                                        {% if item.status == 'pending' %}Chờ xử lý
+                                        {% elif item.status == 'confirmed' %}Đã xác nhận
+                                        {% elif item.status == 'preparing' %}Đang chuẩn bị
+                                        {% elif item.status == 'shipping' %}Đang giao
+                                        {% elif item.status == 'delivered' %}Đã giao
+                                        {% else %}Đã hủy{% endif %}
+                                    </td>
+                                    <td>{{ item.count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top sản phẩm bán chạy -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Top 10 sản phẩm bán chạy</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Sản phẩm</th>
+                                    <th>Cửa hàng</th>
+                                    <th>Đã bán</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in top_products %}
+                                <tr>
+                                    <td>{{ item.product__name }}</td>
+                                    <td>{{ item.product__farm__name }}</td>
+                                    <td>{{ item.total_quantity }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center">Chưa có dữ liệu</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Báo cáo kiểm kê -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Báo cáo kiểm kê gần nhất</h3>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Ngày</th>
+                            <th>Người tạo</th>
+                            <th>Ghi chú</th>
+                            <th>Tổng giá trị</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in inventory_reports %}
+                        <tr>
+                            <td>{{ report.report_date|date:"d/m/Y" }}</td>
+                            <td>{{ report.created_by.username }}</td>
+                            <td>{{ report.notes|truncatewords:15 }}</td>
+                            <td>{{ report.total_value|floatformat:0 }} VNĐ</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">Chưa có báo cáo nào</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

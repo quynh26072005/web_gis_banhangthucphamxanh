@@ -1,0 +1,234 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}
+{% if action == 'create' %}Thêm Store Admin{% else %}Sửa Store Admin{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user-tie"></i>
+                        {% if action == 'create' %}Thêm Store Admin mới{% else %}Sửa thông tin Store Admin{% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if action == 'create' %}
+                        <!-- Chọn cách tạo -->
+                        <div class="mb-4">
+                            <label class="form-label"><strong>Chọn cách tạo:</strong></label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="action_type" 
+                                       id="existing" value="existing" checked 
+                                       onchange="toggleUserForm()">
+                                <label class="form-check-label" for="existing">
+                                    Phân quyền cho user hiện có
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="action_type" 
+                                       id="new" value="new" 
+                                       onchange="toggleUserForm()">
+                                <label class="form-check-label" for="new">
+                                    Tạo user mới
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Form cho user hiện có -->
+                        <div id="existing-user-form">
+                            <div class="mb-3">
+                                <label class="form-label">Chọn user <span class="text-danger">*</span></label>
+                                <select name="user_id" class="form-select" required>
+                                    <option value="">-- Chọn user --</option>
+                                    {% for user in available_users %}
+                                    <option value="{{ user.id }}">
+                                        {{ user.get_full_name|default:user.username }} ({{ user.username }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Form cho user mới -->
+                        <div id="new-user-form" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Username <span class="text-danger">*</span></label>
+                                    <input type="text" name="username" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Password <span class="text-danger">*</span></label>
+                                    <input type="password" name="password" class="form-control">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="email" class="form-control">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Họ</label>
+                                    <input type="text" name="first_name" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Tên</label>
+                                    <input type="text" name="last_name" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <!-- Form sửa -->
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" value="{{ store_admin.user.username }}" disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" 
+                                   value="{{ store_admin.user.email }}">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Họ</label>
+                                <input type="text" name="first_name" class="form-control" 
+                                       value="{{ store_admin.user.first_name }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tên</label>
+                                <input type="text" name="last_name" class="form-control" 
+                                       value="{{ store_admin.user.last_name }}">
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Thông tin Store Admin -->
+                        <hr>
+                        <h5 class="mb-3">Thông tin quản lý</h5>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Chi nhánh quản lý <span class="text-danger">*</span></label>
+                            <select name="farm_id" class="form-select" required>
+                                <option value="">-- Chọn chi nhánh --</option>
+                                {% for farm in farms %}
+                                <option value="{{ farm.id }}" 
+                                        {% if action == 'edit' and store_admin.farm.id == farm.id %}selected{% endif %}>
+                                    {{ farm.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                            <input type="text" name="phone" class="form-control" 
+                                   value="{% if action == 'edit' %}{{ store_admin.phone }}{% endif %}" 
+                                   required>
+                        </div>
+
+                        <!-- Quyền hạn -->
+                        <hr>
+                        <h5 class="mb-3">Quyền hạn</h5>
+                        
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="can_manage_products" 
+                                   id="can_manage_products"
+                                   {% if action == 'create' or store_admin.can_manage_products %}checked{% endif %}>
+                            <label class="form-check-label" for="can_manage_products">
+                                <i class="fas fa-box text-success"></i> Quản lý sản phẩm
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="can_manage_orders" 
+                                   id="can_manage_orders"
+                                   {% if action == 'create' or store_admin.can_manage_orders %}checked{% endif %}>
+                            <label class="form-check-label" for="can_manage_orders">
+                                <i class="fas fa-shopping-cart text-primary"></i> Quản lý đơn hàng
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="can_manage_inventory" 
+                                   id="can_manage_inventory"
+                                   {% if action == 'create' or store_admin.can_manage_inventory %}checked{% endif %}>
+                            <label class="form-check-label" for="can_manage_inventory">
+                                <i class="fas fa-warehouse text-warning"></i> Quản lý kho
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="can_manage_shippers" 
+                                   id="can_manage_shippers"
+                                   {% if action == 'create' or store_admin.can_manage_shippers %}checked{% endif %}>
+                            <label class="form-check-label" for="can_manage_shippers">
+                                <i class="fas fa-motorcycle text-info"></i> Quản lý shipper
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="can_view_reports" 
+                                   id="can_view_reports"
+                                   {% if action == 'create' or store_admin.can_view_reports %}checked{% endif %}>
+                            <label class="form-check-label" for="can_view_reports">
+                                <i class="fas fa-chart-bar text-secondary"></i> Xem báo cáo
+                            </label>
+                        </div>
+
+                        {% if action == 'edit' %}
+                        <hr>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="is_active" 
+                                   id="is_active" {% if store_admin.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="is_active">
+                                <strong>Đang hoạt động</strong>
+                            </label>
+                        </div>
+                        {% endif %}
+
+                        <!-- Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'food_store:admin_store_admins' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Quay lại
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Lưu
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleUserForm() {
+    const existingForm = document.getElementById('existing-user-form');
+    const newForm = document.getElementById('new-user-form');
+    const existingRadio = document.getElementById('existing');
+    
+    if (existingRadio.checked) {
+        existingForm.style.display = 'block';
+        newForm.style.display = 'none';
+        // Enable existing form fields
+        existingForm.querySelectorAll('input, select').forEach(el => el.disabled = false);
+        // Disable new form fields
+        newForm.querySelectorAll('input, select').forEach(el => el.disabled = true);
+    } else {
+        existingForm.style.display = 'none';
+        newForm.style.display = 'block';
+        // Disable existing form fields
+        existingForm.querySelectorAll('input, select').forEach(el => el.disabled = true);
+        // Enable new form fields
+        newForm.querySelectorAll('input, select').forEach(el => el.disabled = false);
+    }
+}
+</script>
+{% endblock %}

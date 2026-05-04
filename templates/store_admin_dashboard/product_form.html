@@ -1,0 +1,149 @@
+{% extends 'store_admin_dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{% if product %}Sửa sản phẩm{% else %}Thêm sản phẩm{% endif %} - {{ managed_farm.name }}{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">
+                    <i class="fas fa-{% if product %}edit{% else %}plus{% endif %} text-success"></i> 
+                    {% if product %}Sửa sản phẩm{% else %}Thêm sản phẩm{% endif %}
+                </h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'food_store:store_admin_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'food_store:store_admin_products' %}">Sản phẩm</a></li>
+                    <li class="breadcrumb-item active">{% if product %}Sửa{% else %}Thêm{% endif %}</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-info-circle"></i> Thông tin sản phẩm
+                        </h3>
+                    </div>
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="name">Tên sản phẩm <span class="text-danger">*</span></label>
+                                <input type="text" name="name" id="name" class="form-control" 
+                                       value="{{ product.name|default:'' }}" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="category">Danh mục <span class="text-danger">*</span></label>
+                                <select name="category" id="category" class="form-control" required>
+                                    <option value="">-- Chọn danh mục --</option>
+                                    {% for cat in categories %}
+                                    <option value="{{ cat.id }}" {% if product and product.category.id == cat.id %}selected{% endif %}>
+                                        {{ cat.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="price">Giá (đ) <span class="text-danger">*</span></label>
+                                        <input type="number" name="price" id="price" class="form-control" 
+                                               value="{{ product.price|default:'' }}" min="0" step="1000" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="unit">Đơn vị <span class="text-danger">*</span></label>
+                                        <input type="text" name="unit" id="unit" class="form-control" 
+                                               value="{{ product.unit|default:'kg' }}" required>
+                                        <small class="text-muted">Ví dụ: kg, gói, hộp, chai</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="stock_quantity">Số lượng tồn kho <span class="text-danger">*</span></label>
+                                <input type="number" name="stock_quantity" id="stock_quantity" class="form-control" 
+                                       value="{{ product.stock_quantity|default:0 }}" min="0" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="description">Mô tả</label>
+                                <textarea name="description" id="description" class="form-control" rows="4">{{ product.description|default:'' }}</textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="image">Hình ảnh</label>
+                                {% if product and product.image %}
+                                <div class="mb-2">
+                                    <img src="{{ product.image.url }}" alt="{{ product.name }}" 
+                                         style="max-width: 200px; border-radius: 5px;">
+                                </div>
+                                {% endif %}
+                                <input type="file" name="image" id="image" class="form-control-file" accept="image/*">
+                                <small class="text-muted">Định dạng: JPG, PNG, WEBP. Kích thước tối đa: 5MB</small>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" name="is_available" id="is_available" 
+                                           class="custom-control-input" {% if not product or product.is_available %}checked{% endif %}>
+                                    <label class="custom-control-label" for="is_available">
+                                        Còn hàng (hiển thị trên website)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> {% if product %}Cập nhật{% else %}Tạo mới{% endif %}
+                            </button>
+                            <a href="{% url 'food_store:store_admin_products' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Hủy
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-info-circle"></i> Hướng dẫn
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Lưu ý:</strong></p>
+                        <ul>
+                            <li>Tên sản phẩm nên rõ ràng, dễ hiểu</li>
+                            <li>Giá nhập theo đơn vị VNĐ</li>
+                            <li>Đơn vị tính: kg, gói, hộp, chai, v.v.</li>
+                            <li>Hình ảnh nên có kích thước 500x500px</li>
+                            <li>Bỏ tick "Còn hàng" để ẩn sản phẩm</li>
+                        </ul>
+                        
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-store"></i>
+                            <strong>Chi nhánh:</strong><br>
+                            {{ managed_farm.name }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

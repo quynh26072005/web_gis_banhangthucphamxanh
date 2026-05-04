@@ -1,0 +1,563 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}{{ title }} - {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin/css/custom_admin.css' %}">
+<style>
+.dashboard-container {
+    padding: 20px;
+    background: #f8f9fa;
+    min-height: 100vh;
+}
+
+.dashboard-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin: 30px 0;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    text-align: center;
+    transition: all 0.3s ease;
+    border-left: 5px solid #28a745;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.stat-card.products { border-left-color: #28a745; }
+.stat-card.orders { border-left-color: #007bff; }
+.stat-card.customers { border-left-color: #fd7e14; }
+.stat-card.farms { border-left-color: #6f42c1; }
+
+.stat-card .icon {
+    font-size: 3.5em;
+    margin-bottom: 15px;
+    opacity: 0.8;
+}
+
+.stat-card .number {
+    font-size: 2.8em;
+    font-weight: bold;
+    margin: 15px 0;
+    color: #333;
+}
+
+.stat-card .label {
+    color: #6c757d;
+    font-size: 1em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+}
+
+.stat-card .link {
+    margin-top: 15px;
+}
+
+.stat-card .link a {
+    color: #28a745;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.stat-card .link a:hover {
+    color: #20c997;
+}
+
+.dashboard-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    margin: 25px 0;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.dashboard-section h3 {
+    margin-top: 0;
+    color: #333;
+    border-bottom: 3px solid #28a745;
+    padding-bottom: 15px;
+    font-size: 1.4em;
+    font-weight: 600;
+}
+
+.recent-orders-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.recent-orders-table th,
+.recent-orders-table td {
+    padding: 15px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.recent-orders-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    text-transform: uppercase;
+    font-size: 0.85em;
+    letter-spacing: 0.5px;
+}
+
+.recent-orders-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-pending { background: #fff3cd; color: #856404; }
+.status-confirmed { background: #d1ecf1; color: #0c5460; }
+.status-preparing { background: #e2e3e5; color: #383d41; }
+.status-shipping { background: #cce5ff; color: #004085; }
+.status-delivered { background: #d4edda; color: #155724; }
+.status-cancelled { background: #f8d7da; color: #721c24; }
+
+.btn-custom {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.btn-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    color: white;
+    text-decoration: none;
+}
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 25px;
+}
+
+.quick-action-card {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 15px;
+    padding: 25px;
+    text-align: center;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: #333;
+}
+
+.quick-action-card:hover {
+    border-color: #28a745;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    text-decoration: none;
+    color: #28a745;
+}
+
+.quick-action-card .icon {
+    font-size: 2.5em;
+    margin-bottom: 15px;
+    color: #28a745;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #6c757d;
+}
+
+.empty-state .icon {
+    font-size: 4em;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+    .dashboard-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .dashboard-container {
+        padding: 10px;
+    }
+    
+    .stat-card {
+        padding: 20px;
+    }
+    
+    .stat-card .number {
+        font-size: 2.2em;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <h1 style="margin: 0; font-size: 2.5em;">
+            <i class="fas fa-tachometer-alt"></i> Dashboard Quản Trị
+        </h1>
+        <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 1.1em;">
+            Chào mừng bạn đến với hệ thống quản lý thực phẩm sạch
+        </p>
+    </div>
+    
+    <!-- Main Statistics Cards -->
+    <div class="dashboard-stats">
+        <div class="stat-card products">
+            <div class="icon" style="color: #28a745;">
+                <i class="fas fa-apple-alt"></i>
+            </div>
+            <div class="number">{{ stats.total_products }}</div>
+            <div class="label">Tổng Sản Phẩm</div>
+            <div class="link">
+                <a href="{% url 'admin:food_store_product_changelist' %}">
+                    <i class="fas fa-arrow-right"></i> Quản lý sản phẩm
+                </a>
+            </div>
+        </div>
+        
+        <div class="stat-card orders">
+            <div class="icon" style="color: #007bff;">
+                <i class="fas fa-receipt"></i>
+            </div>
+            <div class="number">{{ stats.total_orders }}</div>
+            <div class="label">Đơn Hàng</div>
+            <div class="link">
+                <a href="{% url 'admin:food_store_order_changelist' %}">
+                    <i class="fas fa-arrow-right"></i> Quản lý đơn hàng
+                </a>
+            </div>
+        </div>
+        
+        <div class="stat-card customers">
+            <div class="icon" style="color: #fd7e14;">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="number">{{ stats.total_customers }}</div>
+            <div class="label">Khách Hàng</div>
+            <div class="link">
+                <a href="{% url 'admin:food_store_customer_changelist' %}">
+                    <i class="fas fa-arrow-right"></i> Quản lý khách hàng
+                </a>
+            </div>
+        </div>
+        
+        <div class="stat-card farms">
+            <div class="icon" style="color: #6f42c1;">
+                <i class="fas fa-home"></i>
+            </div>
+            <div class="number">{{ stats.total_farms }}</div>
+            <div class="label">Cửa Hàng</div>
+            <div class="link">
+                <a href="{% url 'admin:food_store_farm_changelist' %}">
+                    <i class="fas fa-arrow-right"></i> Quản lý cửa hàng
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Revenue and Performance Stats -->
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <div class="icon" style="color: #28a745;">
+                <i class="fas fa-money-bill-wave"></i>
+            </div>
+            <div class="number">{{ stats.revenue_today|floatformat:0 }}</div>
+            <div class="label">Doanh Thu Hôm Nay (VNĐ)</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="icon" style="color: #17a2b8;">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="number">{{ stats.revenue_this_week|floatformat:0 }}</div>
+            <div class="label">Doanh Thu Tuần Này (VNĐ)</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="icon" style="color: #ffc107;">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="number">{{ stats.active_carts }}</div>
+            <div class="label">Giỏ Hàng Hoạt Động</div>
+            <div class="link">
+                <a href="{% url 'admin:food_store_order_changelist' %}">
+                    <i class="fas fa-arrow-right"></i> Xem đơn hàng
+                </a>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="icon" style="color: #dc3545;">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="number">{{ stats.low_stock_count }}</div>
+            <div class="label">Sản Phẩm Sắp Hết</div>
+            <div class="link">
+                <a href="{% url 'admin:food_store_product_changelist' %}?stock_level=low">
+                    <i class="fas fa-arrow-right"></i> Kiểm tra kho
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 30px;">
+        <!-- Recent Orders -->
+        <div class="dashboard-section">
+            <h3><i class="fas fa-clock"></i> Đơn Hàng Gần Đây</h3>
+            {% if recent_orders %}
+            <table class="recent-orders-table">
+                <thead>
+                    <tr>
+                        <th>Mã ĐH</th>
+                        <th>Khách hàng</th>
+                        <th>Trạng thái</th>
+                        <th>Tổng tiền</th>
+                        <th>Ngày đặt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in recent_orders %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'admin:food_store_order_change' order.id %}" style="color: #007bff; text-decoration: none; font-weight: 600;">
+                                #{{ order.id }}
+                            </a>
+                        </td>
+                        <td>{{ order.customer.user.get_full_name|default:order.customer.user.username }}</td>
+                        <td>
+                            <span class="status-badge status-{{ order.status }}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </td>
+                        <td><strong>{{ order.total_amount|floatformat:0 }} VNĐ</strong></td>
+                        <td>{{ order.created_at|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="{% url 'admin:food_store_order_changelist' %}" class="btn-custom">
+                    <i class="fas fa-list"></i> Xem Tất Cả Đơn Hàng
+                </a>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="icon"><i class="fas fa-inbox"></i></div>
+                <p>Chưa có đơn hàng nào</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Low Stock Products -->
+        <div class="dashboard-section">
+            <h3><i class="fas fa-exclamation-triangle" style="color: #dc3545;"></i> Sản Phẩm Sắp Hết</h3>
+            {% if low_stock_products %}
+            <table class="recent-orders-table">
+                <thead>
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th>Cửa hàng</th>
+                        <th>Tồn kho</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in low_stock_products %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'admin:food_store_product_change' product.id %}" style="color: #007bff; text-decoration: none; font-weight: 600;">
+                                {{ product.name }}
+                            </a>
+                        </td>
+                        <td>{{ product.farm.name }}</td>
+                        <td>
+                            <span style="color: {% if product.stock_quantity == 0 %}#dc3545{% elif product.stock_quantity < 5 %}#fd7e14{% else %}#ffc107{% endif %}; font-weight: bold;">
+                                {{ product.stock_quantity }} {{ product.unit }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if product.is_available %}
+                                <span style="color: #28a745;"><i class="fas fa-check"></i> Có sẵn</span>
+                            {% else %}
+                                <span style="color: #dc3545;"><i class="fas fa-times"></i> Không có</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="{% url 'admin:food_store_product_changelist' %}?stock_level=low" class="btn-custom">
+                    <i class="fas fa-boxes"></i> Quản Lý Kho Hàng
+                </a>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="icon"><i class="fas fa-check-circle" style="color: #28a745;"></i></div>
+                <p>Tất cả sản phẩm đều có đủ hàng</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Top Products -->
+    {% if top_products %}
+    <div class="dashboard-section">
+        <h3><i class="fas fa-star" style="color: #ffc107;"></i> Sản Phẩm Bán Chạy</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+            {% for product in top_products %}
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center; border: 1px solid #e9ecef;">
+                <h4 style="margin: 0 0 10px 0; color: #333;">
+                    <a href="{% url 'admin:food_store_product_change' product.id %}" style="color: #333; text-decoration: none;">
+                        {{ product.name }}
+                    </a>
+                </h4>
+                <p style="margin: 5px 0; color: #6c757d;">{{ product.farm.name }}</p>
+                <p style="margin: 5px 0; font-weight: bold; color: #28a745;">
+                    Đã bán: {{ product.total_sold|default:0 }} {{ product.unit }}
+                </p>
+                <p style="margin: 5px 0; color: #007bff;">
+                    Giá: {{ product.price|floatformat:0 }} VNĐ/{{ product.unit }}
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Quick Actions -->
+    <div class="dashboard-section">
+        <h3><i class="fas fa-bolt"></i> Thao Tác Nhanh</h3>
+        <div class="quick-actions">
+            <a href="{% url 'admin:food_store_product_add' %}" class="quick-action-card">
+                <div class="icon"><i class="fas fa-plus"></i></div>
+                <h4>Thêm Sản Phẩm</h4>
+                <p>Thêm sản phẩm mới vào hệ thống</p>
+            </a>
+            
+            <a href="{% url 'admin:food_store_farm_add' %}" class="quick-action-card">
+                <div class="icon"><i class="fas fa-home"></i></div>
+                <h4>Thêm Cửa Hàng</h4>
+                <p>Đăng ký cửa hàng mới</p>
+            </a>
+            
+            <a href="{% url 'admin:food_store_order_changelist' %}?status=pending" class="quick-action-card">
+                <div class="icon"><i class="fas fa-clock"></i></div>
+                <h4>Đơn Hàng Chờ</h4>
+                <p>Xử lý đơn hàng chờ xác nhận</p>
+            </a>
+            
+            <a href="{% url 'admin:food_store_customer_changelist' %}" class="quick-action-card">
+                <div class="icon"><i class="fas fa-users"></i></div>
+                <h4>Khách Hàng</h4>
+                <p>Quản lý thông tin khách hàng</p>
+            </a>
+            
+            <a href="{% url 'admin:food_store_deliveryzone_changelist' %}" class="quick-action-card">
+                <div class="icon"><i class="fas fa-map-marked-alt"></i></div>
+                <h4>Khu Vực Giao Hàng</h4>
+                <p>Quản lý khu vực giao hàng</p>
+            </a>
+            
+            <a href="/" target="_blank" class="quick-action-card">
+                <div class="icon"><i class="fas fa-globe"></i></div>
+                <h4>Xem Website</h4>
+                <p>Xem giao diện khách hàng</p>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+{{ block.super }}
+<script>
+// Add loading states for links
+document.addEventListener('DOMContentLoaded', function() {
+    const links = document.querySelectorAll('a[href*="admin"]');
+    links.forEach(link => {
+        link.addEventListener('click', function() {
+            // Add loading state
+            const icon = this.querySelector('i');
+            if (icon && !icon.classList.contains('fa-spinner')) {
+                const originalClass = icon.className;
+                icon.className = 'fas fa-spinner fa-spin';
+                
+                // Restore original icon after 2 seconds if page hasn't loaded
+                setTimeout(() => {
+                    if (icon.classList.contains('fa-spinner')) {
+                        icon.className = originalClass;
+                    }
+                }, 2000);
+            }
+        });
+    });
+    
+    // Add hover effects to stat cards
+    const statCards = document.querySelectorAll('.stat-card');
+    statCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px)';
+            this.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
+        });
+    });
+});
+</script>
+{% endblock %}

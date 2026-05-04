@@ -1,0 +1,77 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}Quản lý Cửa hàng{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Quản lý Cửa hàng/Nông trại</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Danh sách cửa hàng</h3>
+                <div class="card-tools">
+                    <a href="{% url 'food_store:admin_farm_create' %}" class="btn btn-sm btn-success">
+                        <i class="fas fa-plus"></i> Thêm mới
+                    </a>
+                </div>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover text-nowrap">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tên cửa hàng</th>
+                            <th>Địa chỉ</th>
+                            <th>Số điện thoại</th>
+                            <th>Chứng nhận hữu cơ</th>
+                            <th>Số sản phẩm</th>
+                            <th>Tọa độ</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for farm in farms %}
+                        <tr>
+                            <td>{{ farm.id }}</td>
+                            <td>{{ farm.name }}</td>
+                            <td>{{ farm.address|truncatewords:10 }}</td>
+                            <td>{{ farm.phone }}</td>
+                            <td>
+                                {% if farm.organic_certified %}
+                                    <span class="badge badge-success">Có</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">Không</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ farm.product_count }}</td>
+                            <td>{{ farm.latitude|floatformat:4 }}, {{ farm.longitude|floatformat:4 }}</td>
+                            <td>
+                                <a href="{% url 'food_store:admin_farm_edit' farm.id %}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'food_store:admin_farm_delete' farm.id %}" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">Chưa có cửa hàng nào</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

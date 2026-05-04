@@ -1,0 +1,175 @@
+{% extends 'store_admin_dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Chi tiết đơn hàng #{{ order.id }} - {{ managed_farm.name }}{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">
+                    <i class="fas fa-receipt text-info"></i> Chi tiết đơn hàng #{{ order.id }}
+                </h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'food_store:store_admin_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'food_store:store_admin_orders' %}">Đơn hàng</a></li>
+                    <li class="breadcrumb-item active">#{{ order.id }}</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Thông tin đơn hàng -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-info-circle"></i> Thông tin đơn hàng
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Mã đơn:</strong> #{{ order.id }}</p>
+                                <p><strong>Trạng thái:</strong> 
+                                    {% if order.status == 'pending' %}
+                                        <span class="badge badge-warning">Chờ xử lý</span>
+                                    {% elif order.status == 'confirmed' %}
+                                        <span class="badge badge-info">Đã xác nhận</span>
+                                    {% elif order.status == 'preparing' %}
+                                        <span class="badge badge-primary">Đang chuẩn bị</span>
+                                    {% elif order.status == 'ready' %}
+                                        <span class="badge badge-secondary">Sẵn sàng giao</span>
+                                    {% elif order.status == 'shipping' %}
+                                        <span class="badge badge-info">Đang giao</span>
+                                    {% elif order.status == 'delivered' %}
+                                        <span class="badge badge-success">Đã giao</span>
+                                    {% elif order.status == 'cancelled' %}
+                                        <span class="badge badge-danger">Đã hủy</span>
+                                    {% endif %}
+                                </p>
+                                <p><strong>Ngày tạo:</strong> {{ order.created_at|date:"d/m/Y H:i" }}</p>
+                                <p><strong>Phương thức thanh toán:</strong> 
+                                    {% if order.payment_method == 'cod' %}
+                                        <span class="badge badge-info">COD</span>
+                                    {% elif order.payment_method == 'bank_transfer' %}
+                                        <span class="badge badge-primary">Chuyển khoản</span>
+                                    {% elif order.payment_method == 'momo' %}
+                                        <span class="badge badge-danger">MoMo</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Khách hàng:</strong> {{ order.customer.user.get_full_name|default:order.customer.user.username }}</p>
+                                <p><strong>Số điện thoại:</strong> {{ order.customer.phone|default:"N/A" }}</p>
+                                <p><strong>Địa chỉ giao hàng:</strong><br>{{ order.delivery_address }}</p>
+                                <p><strong>Shipper:</strong> 
+                                    {% if order.assigned_shipper %}
+                                        {{ order.assigned_shipper.user.get_full_name|default:order.assigned_shipper.user.username }}
+                                    {% else %}
+                                        <span class="text-muted">Chưa gán</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sản phẩm -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-box"></i> Sản phẩm
+                        </h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Sản phẩm</th>
+                                    <th>Đơn giá</th>
+                                    <th>Số lượng</th>
+                                    <th>Thành tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order_items %}
+                                <tr>
+                                    <td>{{ item.product.name }}</td>
+                                    <td>{{ item.price|floatformat:0 }}đ</td>
+                                    <td>{{ item.quantity }} {{ item.product.unit }}</td>
+                                    <td><strong>{{ item.price|floatformat:0 }}đ</strong></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-right"><strong>Tổng cộng:</strong></td>
+                                    <td><strong class="text-success">{{ order.total_amount|floatformat:0 }}đ</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thao tác -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-cog"></i> Thao tác
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <a href="{% url 'food_store:store_admin_order_update_status' order.id %}" 
+                           class="btn btn-primary btn-block">
+                            <i class="fas fa-edit"></i> Cập nhật trạng thái
+                        </a>
+                        <a href="{% url 'food_store:store_admin_orders' %}" 
+                           class="btn btn-secondary btn-block">
+                            <i class="fas fa-arrow-left"></i> Quay lại danh sách
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Lịch sử -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-history"></i> Lịch sử
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <ul class="timeline">
+                            <li>
+                                <i class="fas fa-clock bg-info"></i>
+                                <div class="timeline-item">
+                                    <span class="time"><i class="fas fa-clock"></i> {{ order.created_at|date:"d/m/Y H:i" }}</span>
+                                    <h3 class="timeline-header">Đơn hàng được tạo</h3>
+                                </div>
+                            </li>
+                            {% if order.delivered_at %}
+                            <li>
+                                <i class="fas fa-check bg-success"></i>
+                                <div class="timeline-item">
+                                    <span class="time"><i class="fas fa-clock"></i> {{ order.delivered_at|date:"d/m/Y H:i" }}</span>
+                                    <h3 class="timeline-header">Đã giao hàng</h3>
+                                </div>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

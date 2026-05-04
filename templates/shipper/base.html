@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}Shipper{% endblock %} - Clean Food</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    
+    <style>
+        /* Mobile-First Design */
+        :root {
+            --primary-green: #28a745;
+            --dark-green: #1e7e34;
+            --light-green: #d4edda;
+            --text-dark: #212529;
+            --bg-white: #ffffff;
+            --shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            padding-bottom: 80px; /* Space for bottom nav */
+            max-width: 480px;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        /* Header */
+        .mobile-header {
+            background: var(--primary-green);
+            color: white;
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+        }
+        
+        .mobile-header h1 {
+            font-size: 1.2rem;
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        /* Content */
+        .mobile-content {
+            padding: 15px;
+            min-height: calc(100vh - 140px);
+        }
+        
+        /* Cards */
+        .card-mobile {
+            background: var(--bg-white);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+            border: none;
+        }
+        
+        /* Buttons - Large & Touch-Friendly */
+        .btn-mobile {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            border: none;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+        
+        .btn-mobile:active {
+            transform: scale(0.98);
+        }
+        
+        .btn-primary-mobile {
+            background: var(--primary-green);
+            color: white;
+        }
+        
+        .btn-primary-mobile:hover {
+            background: var(--dark-green);
+            color: white;
+        }
+        
+        .btn-danger-mobile {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-warning-mobile {
+            background: #ffc107;
+            color: var(--text-dark);
+        }
+        
+        .btn-secondary-mobile {
+            background: #6c757d;
+            color: white;
+        }
+        
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 480px;
+            width: 100%;
+            background: white;
+            border-top: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        
+        .bottom-nav-item {
+            flex: 1;
+            text-align: center;
+            padding: 5px;
+            color: #6c757d;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .bottom-nav-item.active {
+            color: var(--primary-green);
+        }
+        
+        .bottom-nav-item i {
+            font-size: 1.5rem;
+            display: block;
+            margin-bottom: 3px;
+        }
+        
+        .bottom-nav-item span {
+            font-size: 0.75rem;
+            display: block;
+        }
+        
+        /* High Contrast Text */
+        .text-high-contrast {
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+        
+        /* Icons */
+        .icon-large {
+            font-size: 2rem;
+        }
+        
+        /* Badge */
+        .badge-mobile {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-green);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Messages */
+        .alert-mobile {
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: none;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Header -->
+    <div class="mobile-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>
+                <i class="fas fa-motorcycle"></i>
+                {% block header_title %}Shipper{% endblock %}
+            </h1>
+            <div>
+                {% if shipper %}
+                <span class="badge bg-light text-dark">{{ shipper.user.get_full_name }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Messages -->
+    {% if messages %}
+    <div class="mobile-content">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-mobile">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Main Content -->
+    <div class="mobile-content">
+        {% block content %}{% endblock %}
+    </div>
+    
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="{% url 'food_store:shipper_dashboard' %}" class="bottom-nav-item {% if request.resolver_match.url_name == 'shipper_dashboard' %}active{% endif %}">
+            <i class="fas fa-home"></i>
+            <span>Trang chủ</span>
+        </a>
+        <a href="{% url 'food_store:shipper_orders' %}" class="bottom-nav-item {% if request.resolver_match.url_name == 'shipper_orders' %}active{% endif %}">
+            <i class="fas fa-list"></i>
+            <span>Đơn hàng</span>
+        </a>
+        <a href="{% url 'food_store:shipper_orders' %}?tab=completed" class="bottom-nav-item">
+            <i class="fas fa-history"></i>
+            <span>Lịch sử</span>
+        </a>
+        <a href="{% url 'food_store:home' %}" class="bottom-nav-item">
+            <i class="fas fa-user"></i>
+            <span>Tài khoản</span>
+        </a>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

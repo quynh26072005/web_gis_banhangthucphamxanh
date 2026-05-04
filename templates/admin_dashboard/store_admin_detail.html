@@ -1,0 +1,194 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}Chi tiết Store Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-user-tie"></i> Chi tiết Store Admin</h2>
+        <div>
+            <a href="{% url 'food_store:admin_store_admin_edit' store_admin.id %}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Sửa
+            </a>
+            <a href="{% url 'food_store:admin_store_admins' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Thông tin cá nhân -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Thông tin cá nhân</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Họ tên:</strong><br>
+                    {{ store_admin.user.get_full_name|default:store_admin.user.username }}</p>
+                    
+                    <p><strong>Username:</strong><br>
+                    {{ store_admin.user.username }}</p>
+                    
+                    <p><strong>Email:</strong><br>
+                    {{ store_admin.user.email|default:"Chưa có" }}</p>
+                    
+                    <p><strong>Số điện thoại:</strong><br>
+                    {{ store_admin.phone }}</p>
+                    
+                    <p><strong>Trạng thái:</strong><br>
+                    {% if store_admin.is_active %}
+                    <span class="badge bg-success">Hoạt động</span>
+                    {% else %}
+                    <span class="badge bg-danger">Tạm khóa</span>
+                    {% endif %}
+                    </p>
+                    
+                    <p><strong>Ngày tạo:</strong><br>
+                    {{ store_admin.created_at|date:"d/m/Y H:i" }}</p>
+                </div>
+            </div>
+
+            <!-- Quyền hạn -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Quyền hạn</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        {% if store_admin.can_manage_products %}
+                        <i class="fas fa-check-circle text-success"></i>
+                        {% else %}
+                        <i class="fas fa-times-circle text-danger"></i>
+                        {% endif %}
+                        Quản lý sản phẩm
+                    </div>
+                    <div class="mb-2">
+                        {% if store_admin.can_manage_orders %}
+                        <i class="fas fa-check-circle text-success"></i>
+                        {% else %}
+                        <i class="fas fa-times-circle text-danger"></i>
+                        {% endif %}
+                        Quản lý đơn hàng
+                    </div>
+                    <div class="mb-2">
+                        {% if store_admin.can_manage_inventory %}
+                        <i class="fas fa-check-circle text-success"></i>
+                        {% else %}
+                        <i class="fas fa-times-circle text-danger"></i>
+                        {% endif %}
+                        Quản lý kho
+                    </div>
+                    <div class="mb-2">
+                        {% if store_admin.can_manage_shippers %}
+                        <i class="fas fa-check-circle text-success"></i>
+                        {% else %}
+                        <i class="fas fa-times-circle text-danger"></i>
+                        {% endif %}
+                        Quản lý shipper
+                    </div>
+                    <div class="mb-2">
+                        {% if store_admin.can_view_reports %}
+                        <i class="fas fa-check-circle text-success"></i>
+                        {% else %}
+                        <i class="fas fa-times-circle text-danger"></i>
+                        {% endif %}
+                        Xem báo cáo
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thông tin chi nhánh -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Chi nhánh quản lý</h5>
+                </div>
+                <div class="card-body">
+                    <h4>{{ farm.name }}</h4>
+                    <p><i class="fas fa-map-marker-alt"></i> {{ farm.address }}</p>
+                    <p><i class="fas fa-phone"></i> {{ farm.phone }}</p>
+                </div>
+            </div>
+
+            <!-- Thống kê -->
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-primary">{{ total_products }}</h3>
+                            <p class="mb-0">Sản phẩm</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-success">{{ total_orders }}</h3>
+                            <p class="mb-0">Đơn hàng</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-info">{{ total_shippers }}</h3>
+                            <p class="mb-0">Shipper</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-warning">{{ total_revenue|floatformat:0 }}đ</h3>
+                            <p class="mb-0">Doanh thu</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Đơn hàng gần nhất -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Đơn hàng gần nhất ({{ orders_today }} đơn hôm nay)</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Mã đơn</th>
+                                    <th>Khách hàng</th>
+                                    <th>Tổng tiền</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td>#{{ order.id }}</td>
+                                    <td>{{ order.customer.user.get_full_name }}</td>
+                                    <td>{{ order.total_amount|floatformat:0 }}đ</td>
+                                    <td>
+                                        <span class="badge bg-{{ order.status|default:'secondary' }}">
+                                            {{ order.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ order.created_at|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Chưa có đơn hàng nào</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

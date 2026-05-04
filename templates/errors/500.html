@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>500 - Lỗi máy chủ | Clean Food GIS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .error-container {
+            text-align: center;
+            color: white;
+            padding: 40px;
+        }
+        .error-code {
+            font-size: 150px;
+            font-weight: bold;
+            line-height: 1;
+            text-shadow: 4px 4px 8px rgba(0,0,0,0.3);
+            animation: glitch 2s infinite;
+        }
+        .error-icon {
+            font-size: 100px;
+            margin-bottom: 20px;
+            animation: spin 4s linear infinite;
+        }
+        .error-title {
+            font-size: 36px;
+            font-weight: 600;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .error-message {
+            font-size: 18px;
+            margin: 20px 0;
+            opacity: 0.9;
+        }
+        .error-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 50px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-home {
+            background: white;
+            color: #fa709a;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 30px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .btn-home:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            color: #fee140;
+            text-decoration: none;
+        }
+        .btn-back {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            text-decoration: none;
+            border-color: white;
+        }
+        @keyframes glitch {
+            0%, 100% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .info-box {
+            margin-top: 30px;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-card">
+            <div class="error-icon">
+                <i class="fas fa-server"></i>
+            </div>
+            <div class="error-code">500</div>
+            <div class="error-title">Lỗi máy chủ</div>
+            <div class="error-message">
+                Xin lỗi, đã xảy ra lỗi trên máy chủ. Chúng tôi đang khắc phục sự cố.
+            </div>
+            
+            <div class="info-box">
+                <strong><i class="fas fa-info-circle"></i> Thông tin:</strong>
+                <p style="margin-top: 10px; margin-bottom: 0;">
+                    Đội ngũ kỹ thuật đã được thông báo và đang xử lý vấn đề này. 
+                    Vui lòng thử lại sau ít phút hoặc liên hệ với chúng tôi nếu vấn đề vẫn tiếp diễn.
+                </p>
+            </div>
+
+            <div style="margin-top: 40px;">
+                <a href="/" class="btn-home">
+                    <i class="fas fa-home"></i> Về trang chủ
+                </a>
+                <br>
+                <a href="javascript:location.reload()" class="btn-back">
+                    <i class="fas fa-redo"></i> Thử lại
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

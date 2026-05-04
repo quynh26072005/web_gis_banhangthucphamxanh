@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh toán - Thực phẩm Sạch</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            color: white !important;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .navbar span {
+            color: white !important;
+        }
+        
+        h1 {
+            color: #2d3748;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+        
+        .card-header {
+            border: none;
+            padding: 1.5rem;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+        
+        .card-header.bg-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+        }
+        
+        .card-header.bg-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        }
+        
+        .form-label {
+            color: #4a5568;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-control, .form-select {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            box-shadow: 0 4px 15px rgba(56, 239, 125, 0.3);
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 239, 125, 0.4);
+        }
+        
+        .btn-outline-success {
+            border: 2px solid #11998e;
+            color: #11998e;
+            background: white;
+        }
+        
+        .btn-outline-success:hover {
+            background: #11998e;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline-primary {
+            border: 2px solid #667eea;
+            color: #667eea;
+            background: white;
+        }
+        
+        .btn-outline-primary:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline-secondary {
+            border: 2px solid #cbd5e0;
+            color: #4a5568;
+        }
+        
+        .btn-outline-secondary:hover {
+            background: #cbd5e0;
+            color: #2d3748;
+        }
+        
+        .d-flex.gap-2 {
+            gap: 0.5rem;
+        }
+        
+        .btn {
+            cursor: pointer;
+            z-index: 1;
+        }
+        
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        #storeMapContainer {
+            animation: slideDown 0.5s ease;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .alert-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .alert-info h6 {
+            color: white;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        #storeInfo {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        
+        #map {
+            border: 3px solid white;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .border-bottom {
+            border-color: #e2e8f0 !important;
+        }
+        
+        .text-success {
+            color: #38ef7d !important;
+            font-weight: 700;
+        }
+        
+        .text-danger {
+            color: #f56565 !important;
+            font-weight: 700;
+        }
+        
+        .text-muted {
+            color: #718096 !important;
+        }
+        
+        hr {
+            border-color: #e2e8f0;
+            opacity: 0.5;
+        }
+        
+        /* Loading animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fa-spinner {
+            animation: spin 1s linear infinite;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .card-header {
+                font-size: 1rem;
+            }
+        }
+        
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-leaf"></i> Thực phẩm Sạch
+            </a>
+            <span>Xin chào, {{ user.username }}</span>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <h1><i class="fas fa-credit-card"></i> Thanh toán đơn hàng</h1>
+        
+        <div class="row mt-4">
+            <div class="col-md-7">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> Thông tin giao hàng</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Họ và tên</strong></label>
+                            <input type="text" class="form-control" id="customerName" value="{{ user.get_full_name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Số điện thoại</strong></label>
+                            <input type="tel" class="form-control" id="customerPhone" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Địa chỉ giao hàng</strong></label>
+                            <textarea class="form-control" id="deliveryAddress" rows="3" placeholder="Nhập địa chỉ đầy đủ..." required></textarea>
+                            <small class="text-muted">Ví dụ: 123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM</small>
+                            <div class="mt-2 d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-success" onclick="getCurrentLocation(); return false;">
+                                    <i class="fas fa-location-arrow"></i> Lấy vị trí hiện tại
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="findNearestStore(); return false;">
+                                    <i class="fas fa-search-location"></i> Tìm cửa hàng gần nhất
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Map and Store Info -->
+                        <div id="storeMapContainer" style="display: none;">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-store"></i> Cửa hàng gần nhất</h6>
+                                <div id="storeInfo"></div>
+                            </div>
+                            <div id="map" style="height: 400px; border-radius: 8px; margin-bottom: 15px;"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Ghi chú</strong></label>
+                            <textarea class="form-control" id="orderNotes" rows="2" placeholder="Ghi chú thêm (tùy chọn)..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-shopping-cart"></i> Đơn hàng của bạn</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Sản phẩm:</h6>
+                        {% for item in cart.items.all %}
+                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                            <div>
+                                <div>{{ item.product.name }}</div>
+                                <small class="text-muted">{{ item.quantity }} x {{ item.product.price|floatformat:0 }} VNĐ</small>
+                            </div>
+                            <div><strong>{{ item.total_price|floatformat:0 }} VNĐ</strong></div>
+                        </div>
+                        {% endfor %}
+                        
+                        <hr>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Tổng tiền hàng:</span>
+                            <strong id="cartSubtotal">{{ cart.total_amount|floatformat:0 }} VNĐ</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Phí giao hàng:</span>
+                            <strong class="text-muted" id="shippingFee">Chưa tính</strong>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Tìm cửa hàng để tính phí</small>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-3">
+                            <strong class="fs-5">Tổng thanh toán:</strong>
+                            <strong class="fs-5 text-danger" id="totalAmount">{{ cart.total_amount|floatformat:0 }} VNĐ</strong>
+                        </div>
+                        
+                        <button class="btn btn-success btn-lg w-100" onclick="placeOrder()">
+                            <i class="fas fa-check-circle"></i> Đặt hàng
+                        </button>
+                        
+                        <a href="/cart/" class="btn btn-outline-secondary w-100 mt-2">
+                            <i class="fas fa-arrow-left"></i> Quay lại giỏ hàng
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+    let map = null;
+    let nearestStoreData = null;
+    
+    function getCurrentLocation() {
+        if (!navigator.geolocation) {
+            alert('Trình duyệt của bạn không hỗ trợ định vị GPS!');
+            return;
+        }
+        
+        const btn = event.target;
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lấy vị trí...';
+        
+        navigator.geolocation.getCurrentPosition(
+            async function(position) {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+                
+                try {
+                    // Reverse geocode to get address
+                    const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLng}&zoom=18&addressdetails=1`;
+                    const response = await fetch(geocodeUrl);
+                    const data = await response.json();
+                    
+                    if (data && data.display_name) {
+                        document.getElementById('deliveryAddress').value = data.display_name;
+                        
+                        // Store coordinates
+                        window.deliveryCoordinates = { lat: userLat, lng: userLng };
+                        
+                        // Auto find nearest store
+                        await findNearestStoreWithCoords(userLat, userLng);
+                        
+                        btn.disabled = false;
+                        btn.innerHTML = originalHTML;
+                    } else {
+                        throw new Error('Không thể lấy địa chỉ');
+                    }
+                } catch (error) {
+                    console.error('Geocoding error:', error);
+                    alert('Không thể chuyển đổi tọa độ thành địa chỉ. Vui lòng nhập địa chỉ thủ công!');
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                }
+            },
+            function(error) {
+                console.error('Geolocation error:', error);
+                let errorMsg = 'Không thể lấy vị trí của bạn. ';
+                
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMsg += 'Bạn đã từ chối quyền truy cập vị trí.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMsg += 'Thông tin vị trí không khả dụng.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMsg += 'Yêu cầu lấy vị trí đã hết thời gian.';
+                        break;
+                    default:
+                        errorMsg += 'Lỗi không xác định.';
+                }
+                
+                alert(errorMsg);
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    }
+    
+    async function findNearestStoreWithCoords(userLat, userLng) {
+        try {
+            // Get all stores
+            const storesResponse = await fetch('/api/get-stores/');
+            const storesData = await storesResponse.json();
+            
+            if (!storesData.success || !storesData.stores || storesData.stores.length === 0) {
+                alert('Không tìm thấy cửa hàng nào!');
+                return;
+            }
+            
+            // Calculate distances and find nearest
+            const storesWithDistance = storesData.stores.map(store => {
+                const distance = calculateDistance(userLat, userLng, store.latitude, store.longitude);
+                return { ...store, distance };
+            });
+            
+            storesWithDistance.sort((a, b) => a.distance - b.distance);
+            nearestStoreData = storesWithDistance[0];
+            
+            // Show map and info
+            document.getElementById('storeMapContainer').style.display = 'block';
+            document.getElementById('storeInfo').innerHTML = `
+                <strong>${nearestStoreData.name}</strong><br>
+                <i class="fas fa-map-marker-alt"></i> ${nearestStoreData.address}<br>
+                <i class="fas fa-route"></i> Khoảng cách: <strong class="text-success">${nearestStoreData.distance.toFixed(2)} km</strong>
+            `;
+            
+            // Initialize or update map
+            if (!map) {
+                map = L.map('map').setView([userLat, userLng], 13);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                    subdomains: 'abcd',
+                    maxZoom: 20
+                }).addTo(map);
+            } else {
+                map.setView([userLat, userLng], 13);
+                map.eachLayer(layer => {
+                    if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                        map.removeLayer(layer);
+                    }
+                });
+            }
+            
+            // Add markers
+            const userIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+            
+            const storeIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+            
+            const address = document.getElementById('deliveryAddress').value || 'Vị trí của bạn';
+            L.marker([userLat, userLng], {icon: userIcon})
+                .addTo(map)
+                .bindPopup('<strong>Địa chỉ của bạn</strong><br>' + address)
+                .openPopup();
+            
+            L.marker([nearestStoreData.latitude, nearestStoreData.longitude], {icon: storeIcon})
+                .addTo(map)
+                .bindPopup(`<strong>${nearestStoreData.name}</strong><br>${nearestStoreData.address}<br>Khoảng cách: ${nearestStoreData.distance.toFixed(2)} km`);
+            
+            // Get actual road route from OSRM
+            try {
+                const routeUrl = `http://router.project-osrm.org/route/v1/driving/${nearestStoreData.longitude},${nearestStoreData.latitude};${userLng},${userLat}?overview=full&geometries=geojson`;
+                const routeResponse = await fetch(routeUrl);
+                const routeData = await routeResponse.json();
+                
+                if (routeData.code === 'Ok' && routeData.routes && routeData.routes.length > 0) {
+                    const route = routeData.routes[0];
+                    const routeCoordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                    
+                    L.polyline(routeCoordinates, {
+                        color: '#4285F4',
+                        weight: 4,
+                        opacity: 0.8
+                    }).addTo(map);
+                    
+                    const roadDistanceKm = route.distance / 1000;
+                    const durationMin = route.duration / 60;
+                    
+                    // Calculate shipping fee based on distance
+                    const shippingFee = calculateShippingFee(roadDistanceKm);
+                    
+                    // Generate fee breakdown text
+                    let feeBreakdown = '';
+                    if (roadDistanceKm <= 3) {
+                        feeBreakdown = '15,000 VNĐ (phí cơ bản)';
+                    } else if (roadDistanceKm <= 10) {
+                        const extraKm = (roadDistanceKm - 3).toFixed(1);
+                        feeBreakdown = `15,000 VNĐ + ${extraKm} km × 3,000 VNĐ/km`;
+                    } else if (roadDistanceKm <= 20) {
+                        const extraKm = (roadDistanceKm - 10).toFixed(1);
+                        feeBreakdown = `36,000 VNĐ + ${extraKm} km × 2,500 VNĐ/km`;
+                    } else {
+                        const extraKm = (roadDistanceKm - 20).toFixed(1);
+                        feeBreakdown = `61,000 VNĐ + ${extraKm} km × 2,000 VNĐ/km`;
+                    }
+                    
+                    document.getElementById('storeInfo').innerHTML = `
+                        <strong>${nearestStoreData.name}</strong><br>
+                        <i class="fas fa-map-marker-alt"></i> ${nearestStoreData.address}<br>
+                        <i class="fas fa-route"></i> Khoảng cách: <strong class="text-success">${roadDistanceKm.toFixed(2)} km</strong><br>
+                        <i class="fas fa-clock"></i> Thời gian: <strong class="text-success">${Math.round(durationMin)} phút</strong><br>
+                        <i class="fas fa-money-bill-wave"></i> Phí ship: <strong class="text-warning">${shippingFee.toLocaleString()} VNĐ</strong><br>
+                        <small class="text-white-50">${feeBreakdown}</small>
+                    `;
+                    
+                    // Update shipping fee in order summary
+                    updateOrderSummary(shippingFee);
+                } else {
+                    L.polyline([
+                        [userLat, userLng],
+                        [nearestStoreData.latitude, nearestStoreData.longitude]
+                    ], {
+                        color: '#4285F4',
+                        weight: 3,
+                        opacity: 0.7,
+                        dashArray: '10, 10'
+                    }).addTo(map);
+                }
+            } catch (routeError) {
+                console.error('Routing error:', routeError);
+                L.polyline([
+                    [userLat, userLng],
+                    [nearestStoreData.latitude, nearestStoreData.longitude]
+                ], {
+                    color: '#4285F4',
+                    weight: 3,
+                    opacity: 0.7,
+                    dashArray: '10, 10'
+                }).addTo(map);
+            }
+            
+            map.fitBounds([
+                [userLat, userLng],
+                [nearestStoreData.latitude, nearestStoreData.longitude]
+            ], { padding: [50, 50] });
+            
+            window.deliveryCoordinates = { lat: userLat, lng: userLng };
+            
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi tìm cửa hàng. Vui lòng thử lại!');
+        }
+    }
+    
+    async function findNearestStore() {
+        const address = document.getElementById('deliveryAddress').value.trim();
+        
+        if (!address) {
+            alert('Vui lòng nhập địa chỉ giao hàng!');
+            return;
+        }
+        
+        try {
+            const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address + ', Vietnam')}&limit=1`;
+            const geocodeResponse = await fetch(geocodeUrl);
+            const geocodeData = await geocodeResponse.json();
+            
+            if (!geocodeData || geocodeData.length === 0) {
+                alert('Không tìm thấy địa chỉ. Vui lòng nhập địa chỉ chính xác hơn!');
+                return;
+            }
+            
+            const userLat = parseFloat(geocodeData[0].lat);
+            const userLng = parseFloat(geocodeData[0].lon);
+            
+            await findNearestStoreWithCoords(userLat, userLng);
+            
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi tìm cửa hàng. Vui lòng thử lại!');
+        }
+    }
+    
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Earth radius in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+    
+    function calculateShippingFee(distanceKm) {
+        // Logic tính phí ship theo khoảng:
+        // - 0-3 km: 15,000 VNĐ (phí cơ bản)
+        // - 3-10 km: 15,000 + (km - 3) × 3,000 VNĐ/km
+        // - 10-20 km: 36,000 + (km - 10) × 2,500 VNĐ/km
+        // - Trên 20 km: 61,000 + (km - 20) × 2,000 VNĐ/km
+        // - Tối đa: 100,000 VNĐ
+        
+        let fee = 15000; // Base fee
+        
+        if (distanceKm <= 3) {
+            // Within 3km: base fee only
+            return fee;
+        } else if (distanceKm <= 10) {
+            // 3-10km: +3,000/km
+            fee += (distanceKm - 3) * 3000;
+        } else if (distanceKm <= 20) {
+            // 10-20km: 7km * 3,000 + additional km * 2,500
+            fee += 7 * 3000;
+            fee += (distanceKm - 10) * 2500;
+        } else {
+            // Over 20km: 7km * 3,000 + 10km * 2,500 + additional km * 2,000
+            fee += 7 * 3000;
+            fee += 10 * 2500;
+            fee += (distanceKm - 20) * 2000;
+        }
+        
+        // Cap at 100,000 VNĐ
+        if (fee > 100000) {
+            fee = 100000;
+        }
+        
+        // Round to nearest 1,000 VNĐ
+        return Math.round(fee / 1000) * 1000;
+    }
+    
+    function updateOrderSummary(shippingFee) {
+        // Get cart total from page
+        const cartSubtotalElement = document.getElementById('cartSubtotal');
+        const cartTotal = parseInt(cartSubtotalElement.textContent.replace(/[^\d]/g, ''));
+        
+        // Update shipping fee display
+        const shippingFeeElement = document.getElementById('shippingFee');
+        shippingFeeElement.textContent = shippingFee.toLocaleString() + ' VNĐ';
+        shippingFeeElement.className = 'text-warning';
+        
+        // Update total
+        const totalAmount = cartTotal + shippingFee;
+        const totalElement = document.getElementById('totalAmount');
+        totalElement.textContent = totalAmount.toLocaleString() + ' VNĐ';
+        
+        // Store shipping fee for order creation
+        window.calculatedShippingFee = shippingFee;
+    }
+    
+    function placeOrder() {
+        const name = document.getElementById('customerName').value.trim();
+        const phone = document.getElementById('customerPhone').value.trim();
+        const address = document.getElementById('deliveryAddress').value.trim();
+        const notes = document.getElementById('orderNotes').value.trim();
+        
+        if (!name || !phone || !address) {
+            alert('Vui lòng điền đầy đủ thông tin!');
+            return;
+        }
+        
+        if (!window.deliveryCoordinates) {
+            alert('Vui lòng nhấn "Tìm cửa hàng gần nhất" để xác định vị trí giao hàng!');
+            return;
+        }
+        
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+        
+        fetch('/api/create-order/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                latitude: window.deliveryCoordinates.lat,
+                longitude: window.deliveryCoordinates.lng,
+                delivery_address: address,
+                notes: notes
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✓ Đặt hàng thành công!');
+                window.location.href = '/order-success/' + data.order_id + '/';
+            } else {
+                alert('Lỗi: ' + (data.error || 'Có lỗi xảy ra'));
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> Đặt hàng';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi đặt hàng');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> Đặt hàng';
+        });
+    }
+    </script>
+</body>
+</html>

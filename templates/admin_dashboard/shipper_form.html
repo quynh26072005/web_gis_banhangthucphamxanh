@@ -1,0 +1,211 @@
+{% extends 'admin_dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{% if action == 'create' %}Thêm Shipper{% else %}Sửa Shipper{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2>
+                <i class="fas fa-motorcycle"></i> 
+                {% if action == 'create' %}Thêm Shipper Mới{% else %}Sửa Thông Tin Shipper{% endif %}
+            </h2>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if action == 'create' %}
+            <!-- Tab chọn loại tạo shipper -->
+            <ul class="nav nav-tabs mb-4" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#existing-user" 
+                            type="button" role="tab">
+                        <i class="fas fa-user-check"></i> Phân quyền cho User hiện có
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#new-user" 
+                            type="button" role="tab">
+                        <i class="fas fa-user-plus"></i> Tạo User mới
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- Tab 1: Phân quyền cho user hiện có -->
+                <div class="tab-pane fade show active" id="existing-user" role="tabpanel">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action_type" value="existing">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Chọn User <span class="text-danger">*</span></label>
+                            <select name="user_id" class="form-select" required>
+                                <option value="">-- Chọn user --</option>
+                                {% for user in available_users %}
+                                <option value="{{ user.id }}">
+                                    {{ user.get_full_name|default:user.username }} ({{ user.username }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Chỉ hiển thị user chưa có quyền shipper</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                            <input type="text" name="phone" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Biển số xe <span class="text-danger">*</span></label>
+                            <input type="text" name="vehicle_number" class="form-control" 
+                                   placeholder="VD: 59-A1 12345" required>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Phân quyền Shipper
+                            </button>
+                            <a href="{% url 'food_store:admin_shippers' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Hủy
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tab 2: Tạo user mới -->
+                <div class="tab-pane fade" id="new-user" role="tabpanel">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action_type" value="new">
+                        
+                        <h5 class="mb-3">Thông tin tài khoản</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Username <span class="text-danger">*</span></label>
+                                <input type="text" name="username" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Mật khẩu <span class="text-danger">*</span></label>
+                                <input type="password" name="password" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Họ</label>
+                                <input type="text" name="last_name" class="form-control">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Tên</label>
+                                <input type="text" name="first_name" class="form-control">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="email" class="form-control">
+                            </div>
+                        </div>
+
+                        <h5 class="mb-3 mt-4">Thông tin shipper</h5>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                                <input type="text" name="phone" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Biển số xe <span class="text-danger">*</span></label>
+                                <input type="text" name="vehicle_number" class="form-control" 
+                                       placeholder="VD: 59-A1 12345" required>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Tạo Shipper
+                            </button>
+                            <a href="{% url 'food_store:admin_shippers' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Hủy
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% else %}
+            <!-- Form sửa shipper -->
+            <form method="post">
+                {% csrf_token %}
+                
+                <h5 class="mb-3">Thông tin tài khoản</h5>
+                
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-control" value="{{ shipper.user.username }}" disabled>
+                    <small class="text-muted">Không thể thay đổi username</small>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Họ</label>
+                        <input type="text" name="last_name" class="form-control" 
+                               value="{{ shipper.user.last_name }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Tên</label>
+                        <input type="text" name="first_name" class="form-control" 
+                               value="{{ shipper.user.first_name }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" 
+                               value="{{ shipper.user.email }}">
+                    </div>
+                </div>
+
+                <h5 class="mb-3 mt-4">Thông tin shipper</h5>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                        <input type="text" name="phone" class="form-control" 
+                               value="{{ shipper.phone }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Biển số xe <span class="text-danger">*</span></label>
+                        <input type="text" name="vehicle_number" class="form-control" 
+                               value="{{ shipper.vehicle_number }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Trạng thái</label>
+                        <select name="status" class="form-select">
+                            <option value="available" {% if shipper.status == 'available' %}selected{% endif %}>
+                                Sẵn sàng
+                            </option>
+                            <option value="busy" {% if shipper.status == 'busy' %}selected{% endif %}>
+                                Đang giao hàng
+                            </option>
+                            <option value="offline" {% if shipper.status == 'offline' %}selected{% endif %}>
+                                Đang nghỉ
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Cập nhật
+                    </button>
+                    <a href="{% url 'food_store:admin_shippers' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Hủy
+                    </a>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

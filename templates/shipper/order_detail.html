@@ -1,0 +1,333 @@
+{% extends 'shipper/base.html' %}
+
+{% block title %}Đơn #{{ order.id }}{% endblock %}
+{% block header_title %}Chi tiết đơn hàng{% endblock %}
+
+{% block extra_css %}
+<style>
+    .checklist-item {
+        background: white;
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        box-shadow: var(--shadow);
+    }
+    
+    .checklist-checkbox {
+        width: 30px;
+        height: 30px;
+        cursor: pointer;
+    }
+    
+    .product-detail {
+        background: white;
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        box-shadow: var(--shadow);
+    }
+    
+    .product-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-right: 15px;
+    }
+    
+    .warning-box {
+        background: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
+    
+    .camera-upload {
+        border: 2px dashed #dee2e6;
+        border-radius: 12px;
+        padding: 30px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .camera-upload:hover {
+        border-color: var(--primary-green);
+        background: var(--light-green);
+    }
+    
+    .preview-image {
+        max-width: 100%;
+        border-radius: 12px;
+        margin-top: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'food_store:shipper_orders' %}" class="btn btn-secondary-mobile mb-3">
+    <i class="fas fa-arrow-left"></i> Quay lại
+</a>
+
+<!-- Order Status -->
+<div class="card-mobile text-center">
+    <h4 class="text-high-contrast mb-2">Đơn hàng #{{ order.id }}</h4>
+    <span class="badge badge-mobile {% if order.status == 'shipping' %}bg-primary{% elif order.status == 'delivered' %}bg-success{% else %}bg-warning{% endif %}" style="font-size: 1rem;">
+        {{ order.get_status_display }}
+    </span>
+</div>
+
+<!-- Customer Info -->
+<div class="card-mobile">
+    <h5 class="text-high-contrast mb-3">
+        <i class="fas fa-user"></i> Thông tin khách hàng
+    </h5>
+    <div class="mb-2">
+        <strong>{{ order.customer.user.get_full_name }}</strong>
+    </div>
+    <div class="mb-2">
+        <i class="fas fa-phone text-success"></i>
+        <a href="tel:{{ order.customer.phone }}" class="text-decoration-none">
+            {{ order.customer.phone }}
+        </a>
+    </div>
+    <div class="mb-2">
+        <i class="fas fa-map-marker-alt text-danger"></i>
+        {{ order.delivery_address }}
+    </div>
+    {% if order.notes %}
+    <div class="warning-box mt-3">
+        <strong><i class="fas fa-sticky-note"></i> Ghi chú:</strong><br>
+        {{ order.notes }}
+    </div>
+    {% endif %}
+    <div class="mt-3">
+        <a href="tel:{{ order.customer.phone }}" class="btn btn-success-mobile" style="background: #28a745; color: white;">
+            <i class="fas fa-phone"></i> Gọi khách hàng
+        </a>
+    </div>
+</div>
+
+<!-- Store Info -->
+<div class="card-mobile">
+    <h5 class="text-high-contrast mb-3">
+        <i class="fas fa-store"></i> Điểm lấy hàng
+    </h5>
+    <div class="mb-2">
+        <strong>{{ order.assigned_farm.name }}</strong>
+    </div>
+    <div class="mb-2">
+        <i class="fas fa-map-marker-alt text-success"></i>
+        {{ order.assigned_farm.address }}
+    </div>
+    <div class="mb-2">
+        <i class="fas fa-phone text-success"></i>
+        <a href="tel:{{ order.assigned_farm.phone }}" class="text-decoration-none">
+            {{ order.assigned_farm.phone }}
+        </a>
+    </div>
+</div>
+
+<!-- Products Checklist -->
+<div class="card-mobile">
+    <h5 class="text-high-contrast mb-3">
+        <i class="fas fa-clipboard-check"></i> Danh sách sản phẩm
+    </h5>
+    {% for item in order.orderitem_set.all %}
+    <div class="product-detail">
+        <div class="d-flex align-items-center">
+            <div class="product-icon {% if 'rau' in item.product.name|lower %}bg-success{% elif 'củ' in item.product.name|lower %}bg-warning{% else %}bg-danger{% endif %} bg-opacity-25">
+                {% if 'rau' in item.product.name|lower %}
+                    <i class="fas fa-leaf text-success"></i>
+                {% elif 'củ' in item.product.name|lower or 'khoai' in item.product.name|lower %}
+                    <i class="fas fa-carrot text-warning"></i>
+                {% elif 'cà chua' in item.product.name|lower or 'dưa' in item.product.name|lower %}
+                    <i class="fas fa-apple-alt text-danger"></i>
+                {% else %}
+                    <i class="fas fa-box text-primary"></i>
+                {% endif %}
+            </div>
+            <div class="flex-grow-1">
+                <strong>{{ item.product.name }}</strong><br>
+                <small class="text-muted">Số lượng: {{ item.quantity }} {{ item.product.unit }}</small>
+                
+                <!-- Warning tags -->
+                {% if 'cà chua' in item.product.name|lower or 'dưa' in item.product.name|lower %}
+                <br><span class="badge bg-warning text-dark mt-1">
+                    <i class="fas fa-exclamation-triangle"></i> Dễ dập nát
+                </span>
+                {% endif %}
+                
+                {% if 'rau' in item.product.name|lower %}
+                <br><span class="badge bg-info mt-1">
+                    <i class="fas fa-snowflake"></i> Giữ mát
+                </span>
+                {% endif %}
+            </div>
+            <div>
+                <strong class="text-success">{{ item.total_price|floatformat:0 }}đ</strong>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    
+    <div class="mt-3 p-3" style="background: var(--light-green); border-radius: 8px;">
+        <div class="d-flex justify-content-between mb-2">
+            <span>Tổng tiền hàng:</span>
+            <strong>{{ subtotal|floatformat:0 }}đ</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+            <span>Phí giao hàng:</span>
+            <strong>{{ order.delivery_fee|floatformat:0 }}đ</strong>
+        </div>
+        <hr>
+        <div class="d-flex justify-content-between">
+            <span class="fs-5">Tổng cộng:</span>
+            <strong class="fs-5 text-success">{{ order.total_amount|floatformat:0 }}đ</strong>
+        </div>
+        <div class="mt-2">
+            <span class="badge bg-info">{{ order.get_payment_method_display }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Checklist for picking -->
+{% if order.status == 'confirmed' and order.assigned_shipper == shipper and not order.shipper_picked_at %}
+<div class="card-mobile">
+    <h5 class="text-high-contrast mb-3">
+        <i class="fas fa-tasks"></i> Kiểm tra trước khi lấy hàng
+    </h5>
+    <div class="checklist-item">
+        <input type="checkbox" class="checklist-checkbox" id="check1">
+        <label for="check1">Đủ số lượng sản phẩm</label>
+    </div>
+    <div class="checklist-item">
+        <input type="checkbox" class="checklist-checkbox" id="check2">
+        <label for="check2">Rau củ tươi, không héo</label>
+    </div>
+    <div class="checklist-item">
+        <input type="checkbox" class="checklist-checkbox" id="check3">
+        <label for="check3">Đóng gói cẩn thận</label>
+    </div>
+    
+    <button class="btn btn-primary-mobile mt-3" onclick="confirmPicked()">
+        <i class="fas fa-check"></i> Xác nhận đã lấy hàng
+    </button>
+</div>
+{% endif %}
+
+<!-- Proof of Delivery -->
+{% if order.status == 'shipping' and order.assigned_shipper == shipper %}
+<div class="card-mobile">
+    <h5 class="text-high-contrast mb-3">
+        <i class="fas fa-camera"></i> Chứng minh giao hàng
+    </h5>
+    
+    <form id="completeForm" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="camera-upload" onclick="document.getElementById('proofImage').click()">
+            <i class="fas fa-camera icon-large text-muted"></i>
+            <p class="mb-0 mt-2">Chụp ảnh gói hàng</p>
+            <small class="text-muted">Nhấn để mở camera</small>
+        </div>
+        <input type="file" id="proofImage" name="proof_image" accept="image/*" capture="environment" style="display: none;" onchange="previewImage(this)">
+        <img id="imagePreview" class="preview-image" style="display: none;">
+        
+        <div class="mt-3">
+            <label class="form-label">Ghi chú (tùy chọn)</label>
+            <textarea class="form-control" name="shipper_notes" rows="3" placeholder="VD: Đã giao cho bảo vệ, Khách không có nhà..."></textarea>
+        </div>
+        
+        <button type="button" class="btn btn-success-mobile mt-3" onclick="completeDelivery()" style="background: #28a745; color: white;">
+            <i class="fas fa-check-circle"></i> Hoàn thành giao hàng
+        </button>
+    </form>
+</div>
+{% endif %}
+
+<!-- Map Button -->
+{% if order.assigned_farm and order.assigned_farm.latitude and order.delivery_latitude %}
+<a href="{% url 'food_store:shipper_order_map' order.id %}" class="btn btn-primary-mobile">
+    <i class="fas fa-map"></i> Xem bản đồ điều hướng
+</a>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('imagePreview');
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function confirmPicked() {
+    const checks = document.querySelectorAll('.checklist-checkbox');
+    let allChecked = true;
+    checks.forEach(check => {
+        if (!check.checked) allChecked = false;
+    });
+    
+    if (!allChecked) {
+        alert('Vui lòng kiểm tra tất cả các mục trước khi xác nhận!');
+        return;
+    }
+    
+    if (!confirm('Xác nhận đã lấy hàng và bắt đầu giao?')) return;
+    
+    fetch('{% url "food_store:shipper_mark_picked" order.id %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('Lỗi: ' + data.message);
+        }
+    });
+}
+
+function completeDelivery() {
+    if (!confirm('Xác nhận đã giao hàng thành công?')) return;
+    
+    const form = document.getElementById('completeForm');
+    const formData = new FormData(form);
+    
+    fetch('{% url "food_store:shipper_complete_order" order.id %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.href = '{% url "food_store:shipper_orders" %}?tab=completed';
+        } else {
+            alert('Lỗi: ' + data.message);
+        }
+    });
+}
+</script>
+{% endblock %}

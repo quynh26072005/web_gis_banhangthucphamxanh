@@ -1,0 +1,91 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}Xuất hàng ra kho{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Xuất hàng ra kho</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card">
+            <form method="post">
+                {% csrf_token %}
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <div class="form-group">
+                        <label>Sản phẩm *</label>
+                        <select name="product" class="form-control" required id="product-select">
+                            <option value="">-- Chọn sản phẩm --</option>
+                            {% for product in products %}
+                            <option value="{{ product.id }}" data-stock="{{ product.stock_quantity }}" data-unit="{{ product.unit }}">
+                                {{ product.name }} (Tồn: {{ product.stock_quantity }} {{ product.unit }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Số lượng *</label>
+                                <input type="number" name="quantity" class="form-control" required min="1" id="quantity-input">
+                                <small class="form-text text-muted" id="stock-info"></small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Đơn giá xuất *</label>
+                                <input type="number" step="0.01" name="unit_price" class="form-control" required min="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Ghi chú</label>
+                        <textarea name="notes" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-upload"></i> Xuất hàng
+                    </button>
+                    <a href="{% url 'food_store:admin_inventory' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Hủy
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<script>
+document.getElementById('product-select').addEventListener('change', function() {
+    var option = this.options[this.selectedIndex];
+    var stock = option.getAttribute('data-stock');
+    var unit = option.getAttribute('data-unit');
+    var stockInfo = document.getElementById('stock-info');
+    var quantityInput = document.getElementById('quantity-input');
+    
+    if (stock) {
+        stockInfo.textContent = 'Tồn kho hiện tại: ' + stock + ' ' + unit;
+        quantityInput.max = stock;
+    } else {
+        stockInfo.textContent = '';
+        quantityInput.removeAttribute('max');
+    }
+});
+</script>
+{% endblock %}

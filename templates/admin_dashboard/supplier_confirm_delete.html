@@ -1,0 +1,43 @@
+{%extends 'admin_dashboard/base.html'%}
+
+{%block title%}Xóa Nhà cung cấp{%endblock%}
+
+{%block content%}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Xóa Nhà cung cấp</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-danger">
+            <div class="card-header">
+                <h3 class="card-title">Xác nhận xóa</h3>
+            </div>
+            <form method="post">
+                {%csrf_token%}
+                <div class="card-body">
+                    <p>Bạn có chắc muốn xóa Nhà cung cấp <strong>{{ supplier.name }}</strong>?</p>
+                    <p class="text-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Hành động này không thể hoàn tác!
+                    </p>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Xóa
+                    </button>
+                    <a href="{%url 'food_store:admin_suppliers'%}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Hủy
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{%endblock%}

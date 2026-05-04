@@ -1,0 +1,110 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}Quản lý kho{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <h1 class="m-0">Quản lý kho</h1>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <!-- Cảnh báo tồn kho -->
+        {% if alerts %}
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-warning">
+                    <h5><i class="icon fas fa-exclamation-triangle"></i> Cảnh báo tồn kho!</h5>
+                    <ul>
+                        {% for alert in alerts %}
+                        <li>{{ alert.product.name }} - Tồn: {{ alert.current_stock }} {{ alert.product.unit }} ({{ alert.get_alert_type_display }})</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Giao dịch kho -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Giao dịch kho gần nhất</h3>
+                <div class="card-tools">
+                    <div class="btn-group mr-2">
+                        <button type="button" class="btn btn-sm btn-info dropdown-toggle" data-toggle="dropdown">
+                            <i class="fas fa-file-download"></i> Xuất báo cáo
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right">
+                            <a class="dropdown-item" href="{% url 'food_store:admin_export_transactions_pdf' %}" target="_blank">
+                                <i class="fas fa-file-pdf text-danger"></i> Xuất PDF - Giao dịch
+                            </a>
+                            <a class="dropdown-item" href="{% url 'food_store:admin_export_transactions_excel' %}">
+                                <i class="fas fa-file-excel text-success"></i> Xuất Excel - Giao dịch
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="{% url 'food_store:admin_export_inventory_pdf' %}" target="_blank">
+                                <i class="fas fa-file-pdf text-danger"></i> Xuất PDF - Tồn kho
+                            </a>
+                            <a class="dropdown-item" href="{% url 'food_store:admin_export_inventory_excel' %}">
+                                <i class="fas fa-file-excel text-success"></i> Xuất Excel - Tồn kho
+                            </a>
+                        </div>
+                    </div>
+                    <a href="{% url 'food_store:admin_stock_import' %}" class="btn btn-sm btn-success mr-1">
+                        <i class="fas fa-download"></i> Nhập hàng
+                    </a>
+                    <a href="{% url 'food_store:admin_stock_export' %}" class="btn btn-sm btn-warning">
+                        <i class="fas fa-upload"></i> Xuất hàng
+                    </a>
+                </div>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Ngày</th>
+                            <th>Loại</th>
+                            <th>Sản phẩm</th>
+                            <th>Số lượng</th>
+                            <th>Đơn giá</th>
+                            <th>Nhà cung cấp</th>
+                            <th>Ghi chú</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trans in transactions %}
+                        <tr>
+                            <td>{{ trans.transaction_date|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if trans.transaction_type == 'in' %}
+                                    <span class="badge badge-success">Nhập kho</span>
+                                {% else %}
+                                    <span class="badge badge-warning">Xuất kho</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ trans.product.name }}</td>
+                            <td>{{ trans.quantity }} {{ trans.product.unit }}</td>
+                            <td>{{ trans.unit_price|floatformat:0 }} VNĐ</td>
+                            <td>{{ trans.supplier.name|default:"-" }}</td>
+                            <td>{{ trans.notes|truncatewords:10 }}</td>
+                            <td>
+                                <a href="{% url 'food_store:admin_transaction_delete' trans.id %}" class="btn btn-sm btn-danger" title="Xóa">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">Chưa có giao dịch nào</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

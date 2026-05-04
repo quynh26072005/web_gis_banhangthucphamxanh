@@ -1,0 +1,106 @@
+{% extends 'admin_dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Quản lý Shipper{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2><i class="fas fa-motorcycle"></i> Quản lý Shipper</h2>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{% url 'food_store:admin_shipper_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Thêm Shipper
+            </a>
+        </div>
+    </div>
+
+    <!-- Tìm kiếm -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-10">
+                    <input type="text" name="search" class="form-control" 
+                           placeholder="Tìm theo tên, SĐT, biển số xe..." 
+                           value="{{ search }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Tìm kiếm
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Danh sách shipper -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Họ tên</th>
+                            <th>Username</th>
+                            <th>Số điện thoại</th>
+                            <th>Biển số xe</th>
+                            <th>Trạng thái</th>
+                            <th>Tổng đơn</th>
+                            <th>Đơn hôm nay</th>
+                            <th>COD đang giữ</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for shipper in shippers %}
+                        <tr>
+                            <td>{{ shipper.id }}</td>
+                            <td>
+                                <strong>{{ shipper.user.get_full_name|default:shipper.user.username }}</strong>
+                            </td>
+                            <td>{{ shipper.user.username }}</td>
+                            <td>{{ shipper.phone }}</td>
+                            <td>{{ shipper.vehicle_number }}</td>
+                            <td>
+                                {% if shipper.status == 'available' %}
+                                    <span class="badge bg-success">Sẵn sàng</span>
+                                {% elif shipper.status == 'busy' %}
+                                    <span class="badge bg-warning">Đang giao</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Nghỉ</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ shipper.total_deliveries }}</td>
+                            <td>{{ shipper.today_deliveries }}</td>
+                            <td>{{ shipper.cod_holding|floatformat:0 }}đ</td>
+                            <td>
+                                <a href="{% url 'food_store:admin_shipper_detail' shipper.id %}" 
+                                   class="btn btn-sm btn-info" title="Xem chi tiết">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'food_store:admin_shipper_edit' shipper.id %}" 
+                                   class="btn btn-sm btn-warning" title="Sửa">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'food_store:admin_shipper_delete' shipper.id %}" 
+                                   class="btn btn-sm btn-danger" title="Xóa">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center text-muted">
+                                Chưa có shipper nào
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,176 @@
+{% extends 'store_admin_dashboard/base.html' %}
+{% load static %}
+
+{% block title %}{% if shipper %}Sửa Shipper{% else %}Thêm Shipper{% endif %} - {{ managed_farm.name }}{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">
+                    <i class="fas fa-{% if shipper %}edit{% else %}plus{% endif %} text-warning"></i> 
+                    {% if shipper %}Sửa Shipper{% else %}Thêm Shipper{% endif %}
+                </h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'food_store:store_admin_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'food_store:store_admin_shippers' %}">Shipper</a></li>
+                    <li class="breadcrumb-item active">{% if shipper %}Sửa{% else %}Thêm{% endif %}</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-info-circle"></i> Thông tin Shipper
+                        </h3>
+                    </div>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="card-body">
+                            {% if not shipper %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Lưu ý:</strong> Hệ thống sẽ tạo tài khoản đăng nhập cho shipper với username và password bạn nhập.
+                            </div>
+                            {% endif %}
+
+                            <h5 class="mb-3">Thông tin tài khoản</h5>
+                            
+                            {% if not shipper %}
+                            <div class="form-group">
+                                <label for="username">Username <span class="text-danger">*</span></label>
+                                <input type="text" name="username" id="username" class="form-control" required>
+                                <small class="text-muted">Username để đăng nhập vào hệ thống</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="password">Mật khẩu <span class="text-danger">*</span></label>
+                                <input type="password" name="password" id="password" class="form-control" required>
+                                <small class="text-muted">Mật khẩu tối thiểu 6 ký tự</small>
+                            </div>
+                            {% else %}
+                            <div class="form-group">
+                                <label for="username">Username</label>
+                                <input type="text" class="form-control" value="{{ shipper.user.username }}" disabled>
+                                <small class="text-muted">Không thể thay đổi username</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="password">Mật khẩu mới</label>
+                                <input type="password" name="password" id="password" class="form-control">
+                                <small class="text-muted">Để trống nếu không muốn đổi mật khẩu</small>
+                            </div>
+                            {% endif %}
+
+                            <hr>
+                            <h5 class="mb-3">Thông tin cá nhân</h5>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="first_name">Họ <span class="text-danger">*</span></label>
+                                        <input type="text" name="first_name" id="first_name" class="form-control" 
+                                               value="{{ shipper.user.first_name|default:'' }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="last_name">Tên <span class="text-danger">*</span></label>
+                                        <input type="text" name="last_name" id="last_name" class="form-control" 
+                                               value="{{ shipper.user.last_name|default:'' }}" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <input type="email" name="email" id="email" class="form-control" 
+                                       value="{{ shipper.user.email|default:'' }}">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="phone">Số điện thoại <span class="text-danger">*</span></label>
+                                <input type="text" name="phone" id="phone" class="form-control" 
+                                       value="{{ shipper.phone|default:'' }}" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="vehicle_number">Biển số xe</label>
+                                <input type="text" name="vehicle_number" id="vehicle_number" class="form-control" 
+                                       value="{{ shipper.vehicle_number|default:'' }}" placeholder="VD: 59A-12345">
+                            </div>
+
+                            {% if shipper %}
+                            <div class="form-group">
+                                <label for="status">Trạng thái</label>
+                                <select name="status" id="status" class="form-control">
+                                    <option value="available" {% if shipper.status == 'available' %}selected{% endif %}>Sẵn sàng</option>
+                                    <option value="busy" {% if shipper.status == 'busy' %}selected{% endif %}>Đang bận</option>
+                                    <option value="offline" {% if shipper.status == 'offline' %}selected{% endif %}>Offline</option>
+                                </select>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> {% if shipper %}Cập nhật{% else %}Tạo mới{% endif %}
+                            </button>
+                            <a href="{% url 'food_store:store_admin_shippers' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Hủy
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-info-circle"></i> Hướng dẫn
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Thông tin cần thiết:</strong></p>
+                        <ul>
+                            <li>Username: Dùng để đăng nhập</li>
+                            <li>Mật khẩu: Tối thiểu 6 ký tự</li>
+                            <li>Họ tên: Tên đầy đủ của shipper</li>
+                            <li>Số điện thoại: Để liên hệ</li>
+                            <li>Biển số xe: Để nhận diện</li>
+                        </ul>
+                        
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Lưu ý:</strong><br>
+                            Shipper sẽ được tự động gán vào chi nhánh: <strong>{{ managed_farm.name }}</strong>
+                        </div>
+
+                        {% if shipper %}
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-motorcycle"></i>
+                            <strong>Trạng thái:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li><strong>Sẵn sàng:</strong> Có thể nhận đơn</li>
+                                <li><strong>Đang bận:</strong> Đang giao hàng</li>
+                                <li><strong>Offline:</strong> Không hoạt động</li>
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

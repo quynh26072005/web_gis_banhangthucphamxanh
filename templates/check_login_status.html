@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiểm tra trạng thái đăng nhập</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3>Kiểm tra trạng thái đăng nhập</h3>
+            </div>
+            <div class="card-body">
+                {% if user.is_authenticated %}
+                    <div class="alert alert-success">
+                        <h4>✅ Bạn đã đăng nhập</h4>
+                        <hr>
+                        <p><strong>Username:</strong> {{ user.username }}</p>
+                        <p><strong>Email:</strong> {{ user.email|default:"Chưa có" }}</p>
+                        <p><strong>Họ tên:</strong> {{ user.get_full_name|default:"Chưa có" }}</p>
+                        <hr>
+                        <p><strong>Là Staff:</strong> 
+                            {% if user.is_staff %}
+                                <span class="badge bg-success">✅ CÓ - Có thể vào admin</span>
+                            {% else %}
+                                <span class="badge bg-danger">❌ KHÔNG - Không thể vào admin</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Là Superuser:</strong> 
+                            {% if user.is_superuser %}
+                                <span class="badge bg-success">✅ CÓ</span>
+                            {% else %}
+                                <span class="badge bg-secondary">❌ KHÔNG</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h5>Bạn có thể:</h5>
+                        <ul>
+                            <li><a href="/" class="btn btn-primary btn-sm">Trang User (Mua hàng)</a></li>
+                            {% if user.is_staff %}
+                                <li class="mt-2"><a href="/quan-tri/" class="btn btn-success btn-sm">Admin Dashboard (Custom)</a></li>
+                            {% else %}
+                                <li class="mt-2"><span class="text-muted">❌ Không thể vào admin (không phải staff)</span></li>
+                            {% endif %}
+                            <li class="mt-2"><a href="/accounts/logout/" class="btn btn-danger btn-sm">Đăng xuất</a></li>
+                        </ul>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <h4>⚠️ Bạn chưa đăng nhập</h4>
+                        <p>Vui lòng đăng nhập để sử dụng hệ thống.</p>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <a href="/accounts/login/" class="btn btn-primary">Đăng nhập User</a>
+                        <a href="/quan-tri/" class="btn btn-success">Đăng nhập Admin</a>
+                    </div>
+                {% endif %}
+                
+                <hr>
+                <div class="mt-3">
+                    <h5>Session Info:</h5>
+                    <p><strong>Session Key:</strong> {{ request.session.session_key|default:"Chưa có" }}</p>
+                    <p><strong>Path hiện tại:</strong> {{ request.path }}</p>
+                    <p><strong>Is Admin Site:</strong> {{ request.is_admin_site|default:"False" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

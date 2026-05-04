@@ -1,0 +1,289 @@
+{%extends 'admin_dashboard/base.html'%}
+
+{%block title%}{%if action == 'create'%}Thêm{%else%}Sửa{%endif%} Cửa hàng{%endblock%}
+
+{%block extra_css%}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #map {
+        height: 400px;
+        width: 100%;
+        border-radius: 4px;
+        margin-bottom: 15px;
+    }
+</style>
+{%endblock%}
+
+{%block content%}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">{%if action == 'create'%}Thêm{%else%}Sửa{%endif%} Cửa hàng</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card">
+            <form method="post">
+                {%csrf_token%}
+                <div class="card-body">
+                    {%if messages%}
+                        {%for message in messages%}
+                        <div class="alert alert-{{message.tags}}">{{message}}</div>
+                        {%endfor%}
+                    {%endif%}
+                    
+                    <div class="form-group">
+                        <label>Tên cửa hàng *</label>
+                        <input type="text" name="name" class="form-control" value="{{ farm.name|default:'' }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Địa chỉ *</label>
+                        <div class="input-group">
+                            <textarea name="address" id="address" class="form-control" rows="3" required>{{ farm.address|default:'' }}</textarea>
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-info" id="searchAddress" title="Tìm vị trí từ địa chỉ">
+                                    <i class="fas fa-search"></i> Tìm trên bản đồ
+                                </button>
+                            </div>
+                        </div>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i> Nhập địa chỉ đầy đủ (đường, quận/huyện, tỉnh/thành phố) để tìm chính xác hơn
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label>Số điện thoại *</label>
+                        <input type="text" name="phone" class="form-control" value="{{ farm.phone|default:'' }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Mô tả</label>
+                        <textarea name="description" class="form-control" rows="3">{{ farm.description|default:'' }}</textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Vị trí trên bản đồ *</label>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>3 cách chọn vị trí:</strong>
+                            <ul class="mb-0 mt-1">
+                                <li>Nhập địa chỉ ở trên và click <strong>"Tìm trên bản đồ"</strong></li>
+                                <li>Click vào bản đồ để đặt marker</li>
+                                <li>Kéo thả marker màu xanh</li>
+                            </ul>
+                        </div>
+                        <div id="map"></div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Vĩ độ (Latitude) *</label>
+                                <input type="number" step="0.000001" name="latitude" id="latitude" class="form-control" value="{% if farm.latitude %}{{ farm.latitude }}{% else %}10.762622{% endif %}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Kinh độ (Longitude) *</label>
+                                <input type="number" step="0.000001" name="longitude" id="longitude" class="form-control" value="{% if farm.longitude %}{{ farm.longitude }}{% else %}106.660172{% endif %}" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" name="organic_certified" class="custom-control-input" id="organic_certified" {%if farm.organic_certified%}checked{%endif%}>
+                            <label class="custom-control-label" for="organic_certified">Chứng nhận hữu cơ</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Lưu
+                    </button>
+                    <a href="{%url 'food_store:admin_farms'%}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Hủy
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{%endblock%}
+
+{%block extra_js%}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Set readonly cho latitude/longitude fields (để tránh nhập sai)
+    document.getElementById('latitude').readOnly = true;
+    document.getElementById('longitude').readOnly = true;
+    
+    // Lấy tọa độ hiện tại hoặc mặc định (TP.HCM)
+    var latInput = document.getElementById('latitude');
+    var lngInput = document.getElementById('longitude');
+    
+    var currentLat = parseFloat(latInput.value) || 10.762622;
+    var currentLng = parseFloat(lngInput.value) || 106.660172;
+    
+    // Đảm bảo giá trị mặc định nếu rỗng
+    if (!latInput.value || latInput.value === '') {
+        latInput.value = '10.762622';
+        currentLat = 10.762622;
+    }
+    if (!lngInput.value || lngInput.value === '') {
+        lngInput.value = '106.660172';
+        currentLng = 106.660172;
+    }
+    
+    // Khởi tạo bản đồ
+    var map = L.map('map').setView([currentLat, currentLng], 13);
+    
+    // Thêm tile layer (CartoDB Positron - tránh lỗi 403)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+    }).addTo(map);
+    
+    // Icon marker màu xanh
+    var greenIcon = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+    });
+    
+    // Thêm marker có thể kéo thả
+    var marker = L.marker([currentLat, currentLng], {
+        draggable: true,
+        icon: greenIcon
+    }).addTo(map);
+    
+    marker.bindPopup("<b>Vị trí cửa hàng</b><br>Kéo thả để di chuyển").openPopup();
+    
+    // Cập nhật tọa độ khi kéo marker
+    marker.on('dragend', function(e) {
+        var position = marker.getLatLng();
+        updateCoordinates(position.lat, position.lng);
+    });
+    
+    // Click vào bản đồ để di chuyển marker
+    map.on('click', function(e) {
+        marker.setLatLng(e.latlng);
+        updateCoordinates(e.latlng.lat, e.latlng.lng);
+    });
+    
+    // Hàm cập nhật tọa độ vào input fields
+    function updateCoordinates(lat, lng) {
+        document.getElementById('latitude').value = lat.toFixed(6);
+        document.getElementById('longitude').value = lng.toFixed(6);
+    }
+    
+    // Geocoding: Tìm tọa độ từ địa chỉ
+    document.getElementById('searchAddress').addEventListener('click', function() {
+        var address = document.getElementById('address').value.trim();
+        
+        if (!address) {
+            alert('Vui lòng nhập địa chỉ trước khi tìm kiếm!');
+            return;
+        }
+        
+        // Hiển thị loading
+        var btn = this;
+        var originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tìm...';
+        btn.disabled = true;
+        
+        // Gọi Nominatim API (OpenStreetMap Geocoding)
+        // Thêm "Vietnam" vào query để tìm chính xác hơn
+        var searchQuery = address + ', Vietnam';
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(searchQuery) + '&limit=1';
+        
+        fetch(url, {
+            headers: {
+                'User-Agent': 'CleanFoodGIS/1.0' // Nominatim yêu cầu User-Agent
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+            
+            if (data && data.length > 0) {
+                var lat = parseFloat(data[0].lat);
+                var lng = parseFloat(data[0].lon);
+                
+                // Di chuyển marker và bản đồ đến vị trí tìm được
+                marker.setLatLng([lat, lng]);
+                map.setView([lat, lng], 15); // Zoom in để xem rõ hơn
+                
+                // Cập nhật tọa độ
+                updateCoordinates(lat, lng);
+                
+                // Hiển thị popup
+                marker.bindPopup("<b>Đã tìm thấy!</b><br>" + data[0].display_name).openPopup();
+                
+                // Thông báo thành công
+                showNotification('success', 'Đã tìm thấy vị trí! Bạn có thể điều chỉnh marker nếu cần.');
+            } else {
+                showNotification('warning', 'Không tìm thấy địa chỉ. Vui lòng nhập địa chỉ chi tiết hơn hoặc chọn vị trí trên bản đồ.');
+            }
+        })
+        .catch(error => {
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+            console.error('Geocoding error:', error);
+            showNotification('error', 'Lỗi khi tìm kiếm địa chỉ. Vui lòng thử lại sau.');
+        });
+    });
+    
+    // Hàm hiển thị thông báo
+    function showNotification(type, message) {
+        var alertClass = 'alert-info';
+        if (type === 'success') alertClass = 'alert-success';
+        if (type === 'warning') alertClass = 'alert-warning';
+        if (type === 'error') alertClass = 'alert-danger';
+        
+        var notification = document.createElement('div');
+        notification.className = 'alert ' + alertClass + ' alert-dismissible fade show';
+        notification.style.position = 'fixed';
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.zIndex = '9999';
+        notification.style.minWidth = '300px';
+        notification.innerHTML = message + '<button type="button" class="close" data-dismiss="alert">&times;</button>';
+        
+        document.body.appendChild(notification);
+        
+        // Tự động ẩn sau 5 giây
+        setTimeout(function() {
+            notification.remove();
+        }, 5000);
+    }
+    
+    // Cho phép Enter trong textarea address để trigger search
+    document.getElementById('address').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && e.ctrlKey) {
+            e.preventDefault();
+            document.getElementById('searchAddress').click();
+        }
+    });
+    
+    // Validation trước khi submit form
+    document.querySelector('form').addEventListener('submit', function(e) {
+        var lat = document.getElementById('latitude').value;
+        var lng = document.getElementById('longitude').value;
+        
+        if (!lat || !lng || lat === '' || lng === '') {
+            e.preventDefault();
+            alert('Vui lòng chọn vị trí cửa hàng trên bản đồ!');
+            return false;
+        }
+    });
+</script>
+{%endblock%}

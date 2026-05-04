@@ -1,0 +1,173 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Content Header -->
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Dashboard</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="#">Trang chủ</a></li>
+                    <li class="breadcrumb-item active">Dashboard</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        <!-- Info boxes -->
+        <div class="row">
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                    <div class="inner">
+                        <h3>{{ total_orders }}</h3>
+                        <p>Tổng đơn hàng</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <a href="{% url 'food_store:admin_orders' %}" class="small-box-footer">
+                        Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                    <div class="inner">
+                        <h3>{{ total_revenue|floatformat:0 }}</h3>
+                        <p>Doanh thu (VNĐ)</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <a href="#" class="small-box-footer">
+                        Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                    <div class="inner">
+                        <h3>{{ pending_orders }}</h3>
+                        <p>Đơn chờ xử lý</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <a href="{% url 'food_store:admin_orders' %}?status=pending" class="small-box-footer">
+                        Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-danger">
+                    <div class="inner">
+                        <h3>{{ stock_alerts }}</h3>
+                        <p>Cảnh báo tồn kho</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <a href="{% url 'food_store:admin_inventory' %}" class="small-box-footer">
+                        Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Đơn hàng gần nhất -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Đơn hàng gần nhất</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Mã ĐH</th>
+                                    <th>Khách hàng</th>
+                                    <th>Tổng tiền</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td>#{{ order.id }}</td>
+                                    <td>{{ order.customer.user.get_full_name|default:order.customer.user.username }}</td>
+                                    <td>{{ order.total_amount|floatformat:0 }} VNĐ</td>
+                                    <td>
+                                        {% if order.status == 'pending' %}
+                                            <span class="badge badge-warning">Chờ xử lý</span>
+                                        {% elif order.status == 'confirmed' %}
+                                            <span class="badge badge-info">Đã xác nhận</span>
+                                        {% elif order.status == 'shipping' %}
+                                            <span class="badge badge-primary">Đang giao</span>
+                                        {% elif order.status == 'delivered' %}
+                                            <span class="badge badge-success">Đã giao</span>
+                                        {% else %}
+                                            <span class="badge badge-danger">Đã hủy</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ order.created_at|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">Chưa có đơn hàng nào</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sản phẩm sắp hết -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Sản phẩm sắp hết</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="products-list product-list-in-card pl-2 pr-2">
+                            {% for product in low_stock_products %}
+                            <li class="item">
+                                <div class="product-info">
+                                    <a href="#" class="product-title">
+                                        {{ product.name }}
+                                        <span class="badge badge-warning float-right">{{ product.stock_quantity }} {{ product.unit }}</span>
+                                    </a>
+                                    <span class="product-description">
+                                        {{ product.farm.name }}
+                                    </span>
+                                </div>
+                            </li>
+                            {% empty %}
+                            <li class="item">
+                                <div class="product-info">
+                                    <span class="product-description">Tất cả sản phẩm đều đủ hàng</span>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

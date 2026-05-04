@@ -1,0 +1,126 @@
+{% extends 'store_admin_dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Quản lý Đơn hàng - {{ managed_farm.name }}{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">
+                    <i class="fas fa-shopping-cart text-info"></i> Quản lý Đơn hàng
+                </h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'food_store:store_admin_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Đơn hàng</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-list"></i> Danh sách đơn hàng - {{ managed_farm.name }}
+                </h3>
+                <div class="card-tools">
+                    <form method="get" class="form-inline">
+                        <div class="input-group input-group-sm">
+                            <select name="status" class="form-control" onchange="this.form.submit()">
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Chờ xử lý</option>
+                                <option value="confirmed" {% if current_status == 'confirmed' %}selected{% endif %}>Đã xác nhận</option>
+                                <option value="preparing" {% if current_status == 'preparing' %}selected{% endif %}>Đang chuẩn bị</option>
+                                <option value="ready" {% if current_status == 'ready' %}selected{% endif %}>Sẵn sàng giao</option>
+                                <option value="shipping" {% if current_status == 'shipping' %}selected{% endif %}>Đang giao</option>
+                                <option value="delivered" {% if current_status == 'delivered' %}selected{% endif %}>Đã giao</option>
+                                <option value="cancelled" {% if current_status == 'cancelled' %}selected{% endif %}>Đã hủy</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px">Mã đơn</th>
+                            <th>Khách hàng</th>
+                            <th>Địa chỉ giao hàng</th>
+                            <th>Tổng tiền</th>
+                            <th>Trạng thái</th>
+                            <th>Shipper</th>
+                            <th>Ngày tạo</th>
+                            <th style="width: 120px">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td><strong>#{{ order.id }}</strong></td>
+                            <td>
+                                <i class="fas fa-user"></i>
+                                {{ order.customer.user.get_full_name|default:order.customer.user.username }}
+                            </td>
+                            <td>
+                                <small>{{ order.delivery_address|truncatewords:10 }}</small>
+                            </td>
+                            <td><strong>{{ order.total_amount|floatformat:0 }}đ</strong></td>
+                            <td>
+                                {% if order.status == 'pending' %}
+                                    <span class="badge badge-warning">Chờ xử lý</span>
+                                {% elif order.status == 'confirmed' %}
+                                    <span class="badge badge-info">Đã xác nhận</span>
+                                {% elif order.status == 'preparing' %}
+                                    <span class="badge badge-primary">Đang chuẩn bị</span>
+                                {% elif order.status == 'ready' %}
+                                    <span class="badge badge-secondary">Sẵn sàng giao</span>
+                                {% elif order.status == 'shipping' %}
+                                    <span class="badge badge-info">Đang giao</span>
+                                {% elif order.status == 'delivered' %}
+                                    <span class="badge badge-success">Đã giao</span>
+                                {% elif order.status == 'cancelled' %}
+                                    <span class="badge badge-danger">Đã hủy</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if order.assigned_shipper %}
+                                    <i class="fas fa-motorcycle"></i>
+                                    {{ order.assigned_shipper.user.get_full_name|default:order.assigned_shipper.user.username }}
+                                {% else %}
+                                    <span class="text-muted">Chưa gán</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ order.created_at|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'food_store:store_admin_order_detail' order.id %}" 
+                                   class="btn btn-sm btn-info" title="Xem chi tiết">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'food_store:store_admin_order_update_status' order.id %}" 
+                                   class="btn btn-sm btn-primary" title="Cập nhật">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>Chưa có đơn hàng nào</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

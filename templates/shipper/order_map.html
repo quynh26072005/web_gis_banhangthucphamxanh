@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+{% load l10n %}
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bản đồ giao hàng</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; }
+        #map { 
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 1;
+        }
+        .info-box {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+        .btn-box {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            text-decoration: none;
+            text-align: center;
+        }
+        .btn-green { background: #28a745; color: white; }
+        .btn-gray { background: #6c757d; color: white; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="info-box">
+        <strong>Đơn #{{ order.id }}</strong><br>
+        <small>Khoảng cách: {{ order.delivery_distance_km|floatformat:1 }} km</small>
+    </div>
+    
+    <div class="btn-box">
+        <a href="tel:{{ order.customer.phone }}" class="btn btn-green">📞 Gọi khách</a>
+        <a href="{% url 'food_store:shipper_order_detail' order.id %}" class="btn btn-gray">← Quay lại</a>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        (function() {
+            // Get coordinates - use localize:off to get standard format
+            var storeLat = parseFloat("{% localize off %}{{ order.assigned_farm.latitude }}{% endlocalize %}");
+            var storeLng = parseFloat("{% localize off %}{{ order.assigned_farm.longitude }}{% endlocalize %}");
+            var deliveryLat = parseFloat("{% localize off %}{{ order.delivery_latitude }}{% endlocalize %}");
+            var deliveryLng = parseFloat("{% localize off %}{{ order.delivery_longitude }}{% endlocalize %}");
+            
+            console.log('=== COORDINATES ===');
+            console.log('Store:', storeLat, storeLng);
+            console.log('Delivery:', deliveryLat, deliveryLng);
+            
+            if (!storeLat || !deliveryLat || isNaN(storeLat) || isNaN(deliveryLat)) {
+                alert('Không có tọa độ giao hàng hợp lệ!');
+                console.error('Invalid coordinates');
+                return;
+            }
+            
+            // Center between two points
+            var centerLat = (storeLat + deliveryLat) / 2;
+            var centerLng = (storeLng + deliveryLng) / 2;
+            
+            console.log('Center:', centerLat, centerLng);
+            
+            // Create map
+            var map = L.map('map', {
+                center: [centerLat, centerLng],
+                zoom: 13,
+                zoomControl: true
+            });
+            
+            // Add tiles
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+            
+            console.log('✓ Map created');
+            
+            // Create custom div icons
+            var storeIcon = L.divIcon({
+                className: 'custom-marker-store',
+                html: '<div style="background-color: #28a745; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><div style="transform: rotate(45deg); margin-top: 3px; text-align: center; color: white; font-size: 18px;">🏪</div></div>',
+                iconSize: [30, 30],
+                iconAnchor: [15, 30],
+                popupAnchor: [0, -30]
+            });
+            
+            var deliveryIcon = L.divIcon({
+                className: 'custom-marker-delivery',
+                html: '<div style="background-color: #dc3545; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><div style="transform: rotate(45deg); margin-top: 3px; text-align: center; color: white; font-size: 18px;">🏠</div></div>',
+                iconSize: [30, 30],
+                iconAnchor: [15, 30],
+                popupAnchor: [0, -30]
+            });
+            
+            // Add store marker (GREEN)
+            console.log('Adding store marker...');
+            var storeMarker = L.marker([storeLat, storeLng], {icon: storeIcon})
+                .addTo(map)
+                .bindPopup('<strong>🏪 Lấy hàng</strong><br>{{ order.assigned_farm.name|escapejs }}<br><small>{{ order.assigned_farm.address|escapejs }}</small>');
+            
+            console.log('✓ Store marker added');
+            
+            // Add delivery marker (RED)
+            console.log('Adding delivery marker...');
+            var deliveryMarker = L.marker([deliveryLat, deliveryLng], {icon: deliveryIcon})
+                .addTo(map)
+                .bindPopup('<strong>🏠 Giao hàng</strong><br>{{ order.customer.user.get_full_name|escapejs }}<br><small>{{ order.delivery_address|escapejs }}</small>')
+                .openPopup();
+            
+            console.log('✓ Delivery marker added');
+            
+            // Get route from OSRM (same as checkout)
+            var routeUrl = 'https://router.project-osrm.org/route/v1/driving/' + 
+                          storeLng + ',' + storeLat + ';' + 
+                          deliveryLng + ',' + deliveryLat + 
+                          '?overview=full&geometries=geojson';
+            
+            console.log('Fetching route from OSRM...');
+            
+            fetch(routeUrl)
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    console.log('OSRM response:', data);
+                    
+                    if (data.code === 'Ok' && data.routes && data.routes[0]) {
+                        // Draw actual road route
+                        var route = data.routes[0];
+                        var coords = route.geometry.coordinates;
+                        var latLngs = coords.map(function(coord) {
+                            return [coord[1], coord[0]];
+                        });
+                        
+                        L.polyline(latLngs, {
+                            color: '#28a745',
+                            weight: 6,
+                            opacity: 0.8
+                        }).addTo(map);
+                        
+                        console.log('✓ Route drawn successfully');
+                    } else {
+                        // Fallback: straight dashed line
+                        console.log('No route found, drawing fallback line');
+                        L.polyline([
+                            [storeLat, storeLng],
+                            [deliveryLat, deliveryLng]
+                        ], {
+                            color: '#28a745',
+                            weight: 5,
+                            opacity: 0.6,
+                            dashArray: '10, 10'
+                        }).addTo(map);
+                    }
+                })
+                .catch(function(error) {
+                    console.error('OSRM error:', error);
+                    // Fallback line
+                    L.polyline([
+                        [storeLat, storeLng],
+                        [deliveryLat, deliveryLng]
+                    ], {
+                        color: '#28a745',
+                        weight: 5,
+                        opacity: 0.6,
+                        dashArray: '10, 10'
+                    }).addTo(map);
+                });
+            
+            // Fit bounds to show both markers
+            map.fitBounds([
+                [storeLat, storeLng],
+                [deliveryLat, deliveryLng]
+            ], {
+                padding: [80, 80]
+            });
+            
+            // Fix map rendering
+            setTimeout(function() {
+                map.invalidateSize();
+                console.log('Map size invalidated');
+            }, 200);
+            
+            console.log('✓ Map setup complete');
+        })();
+    </script>
+</body>
+</html>

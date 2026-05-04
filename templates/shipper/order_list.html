@@ -1,0 +1,383 @@
+{% extends 'shipper/base.html' %}
+
+{% block title %}Đơn hàng{% endblock %}
+{% block header_title %}Quản lý đơn hàng{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tabs-mobile {
+        display: flex;
+        background: white;
+        border-radius: 12px;
+        padding: 5px;
+        margin-bottom: 15px;
+        box-shadow: var(--shadow);
+        overflow-x: auto;
+    }
+    
+    .tab-item {
+        flex: 1;
+        text-align: center;
+        padding: 10px 15px;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #6c757d;
+        font-weight: 500;
+        white-space: nowrap;
+        transition: all 0.2s;
+    }
+    
+    .tab-item.active {
+        background: var(--primary-green);
+        color: white;
+    }
+    
+    .order-card {
+        background: white;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: var(--shadow);
+        border-left: 4px solid var(--primary-green);
+    }
+    
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .order-id {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+    
+    .order-distance {
+        background: var(--light-green);
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--dark-green);
+    }
+    
+    .order-info {
+        margin-bottom: 10px;
+    }
+    
+    .order-info-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+    }
+    
+    .product-tag {
+        display: inline-block;
+        background: #f8f9fa;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        margin-right: 5px;
+        margin-bottom: 5px;
+    }
+    
+    .warning-tag {
+        background: #fff3cd;
+        color: #856404;
+        padding: 5px 10px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        display: inline-block;
+        margin-top: 5px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 15px;
+        opacity: 0.3;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Tabs -->
+<div class="tabs-mobile">
+    <a href="?tab=new" class="tab-item {% if tab == 'new' %}active{% endif %}">
+        <i class="fas fa-bell"></i> Đơn mới
+    </a>
+    <a href="?tab=picking" class="tab-item {% if tab == 'picking' %}active{% endif %}">
+        <i class="fas fa-box"></i> Đang lấy
+    </a>
+    <a href="?tab=delivering" class="tab-item {% if tab == 'delivering' %}active{% endif %}">
+        <i class="fas fa-shipping-fast"></i> Đang giao
+    </a>
+    <a href="?tab=completed" class="tab-item {% if tab == 'completed' %}active{% endif %}">
+        <i class="fas fa-check-circle"></i> Hoàn thành
+    </a>
+</div>
+
+<!-- Tab Content -->
+{% if tab == 'new' %}
+    <!-- Đơn mới -->
+    {% if new_orders %}
+        {% for order in new_orders %}
+        <div class="order-card">
+            <div class="order-header">
+                <span class="order-id">
+                    <i class="fas fa-receipt"></i> #{{ order.id }}
+                </span>
+                <span class="order-distance">
+                    <i class="fas fa-route"></i> {{ order.delivery_distance_km|floatformat:1 }} km
+                </span>
+            </div>
+            
+            <div class="order-info">
+                <div class="order-info-item">
+                    <i class="fas fa-store text-success"></i>
+                    <strong>{{ order.assigned_farm.name }}</strong>
+                </div>
+                <div class="order-info-item">
+                    <i class="fas fa-map-marker-alt text-danger"></i>
+                    {{ order.delivery_address|truncatewords:8 }}
+                </div>
+                <div class="order-info-item">
+                    <i class="fas fa-money-bill-wave text-warning"></i>
+                    <strong>{{ order.total_amount|floatformat:0 }}đ</strong>
+                    <span class="badge bg-info">{{ order.get_payment_method_display }}</span>
+                </div>
+            </div>
+            
+            <!-- Products -->
+            <div class="mb-2">
+                {% for item in order.orderitem_set.all|slice:":3" %}
+                <span class="product-tag">
+                    <i class="fas fa-leaf"></i> {{ item.product.name }} x{{ item.quantity }}
+                </span>
+                {% endfor %}
+                {% if order.orderitem_set.count > 3 %}
+                <span class="product-tag">+{{ order.orderitem_set.count|add:-3 }} món</span>
+                {% endif %}
+            </div>
+            
+            <!-- Warning -->
+            {% if order.notes %}
+            <div class="warning-tag">
+                <i class="fas fa-exclamation-triangle"></i> {{ order.notes|truncatewords:10 }}
+            </div>
+            {% endif %}
+            
+            <!-- Actions -->
+            <div class="mt-3">
+                <button class="btn btn-primary-mobile" onclick="acceptOrder({{ order.id }})">
+                    <i class="fas fa-hand-paper"></i> Nhận đơn ngay
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>Chưa có đơn hàng mới</p>
+        </div>
+    {% endif %}
+
+{% elif tab == 'picking' %}
+    <!-- Đang lấy hàng -->
+    {% if picking_orders %}
+        {% for order in picking_orders %}
+        <div class="order-card" style="border-left-color: #ffc107;">
+            <div class="order-header">
+                <span class="order-id">
+                    <i class="fas fa-receipt"></i> #{{ order.id }}
+                </span>
+                <span class="badge bg-warning text-dark">Đang lấy hàng</span>
+            </div>
+            
+            <div class="order-info">
+                <div class="order-info-item">
+                    <i class="fas fa-store text-success"></i>
+                    <strong>{{ order.assigned_farm.name }}</strong>
+                </div>
+                <div class="order-info-item">
+                    <i class="fas fa-clock text-muted"></i>
+                    Nhận lúc: {{ order.shipper_accepted_at|date:"H:i" }}
+                </div>
+            </div>
+            
+            <!-- Products with icons -->
+            <div class="mb-2">
+                {% for item in order.orderitem_set.all %}
+                <span class="product-tag">
+                    {% if 'rau' in item.product.name|lower %}
+                        <i class="fas fa-leaf text-success"></i>
+                    {% elif 'củ' in item.product.name|lower or 'khoai' in item.product.name|lower %}
+                        <i class="fas fa-carrot text-warning"></i>
+                    {% elif 'cà chua' in item.product.name|lower or 'dưa' in item.product.name|lower %}
+                        <i class="fas fa-apple-alt text-danger"></i>
+                    {% else %}
+                        <i class="fas fa-box"></i>
+                    {% endif %}
+                    {{ item.product.name }} x{{ item.quantity }}
+                </span>
+                {% endfor %}
+            </div>
+            
+            <!-- Actions -->
+            <div class="mt-3">
+                <a href="{% url 'food_store:shipper_order_detail' order.id %}" class="btn btn-warning-mobile">
+                    <i class="fas fa-eye"></i> Xem chi tiết
+                </a>
+                <button class="btn btn-primary-mobile" onclick="markPicked({{ order.id }})">
+                    <i class="fas fa-check"></i> Đã lấy hàng
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-box-open"></i>
+            <p>Không có đơn đang lấy hàng</p>
+        </div>
+    {% endif %}
+
+{% elif tab == 'delivering' %}
+    <!-- Đang giao -->
+    {% if delivering_orders %}
+        {% for order in delivering_orders %}
+        <div class="order-card" style="border-left-color: #007bff;">
+            <div class="order-header">
+                <span class="order-id">
+                    <i class="fas fa-receipt"></i> #{{ order.id }}
+                </span>
+                <span class="badge bg-primary">Đang giao</span>
+            </div>
+            
+            <div class="order-info">
+                <div class="order-info-item">
+                    <i class="fas fa-user text-primary"></i>
+                    <strong>{{ order.customer.user.get_full_name }}</strong>
+                </div>
+                <div class="order-info-item">
+                    <i class="fas fa-phone text-success"></i>
+                    <a href="tel:{{ order.customer.phone }}" class="text-decoration-none">
+                        {{ order.customer.phone }}
+                    </a>
+                </div>
+                <div class="order-info-item">
+                    <i class="fas fa-map-marker-alt text-danger"></i>
+                    {{ order.delivery_address|truncatewords:10 }}
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="mt-3">
+                <a href="{% url 'food_store:shipper_order_map' order.id %}" class="btn btn-primary-mobile">
+                    <i class="fas fa-map"></i> Xem bản đồ
+                </a>
+                <a href="{% url 'food_store:shipper_order_detail' order.id %}" class="btn btn-success-mobile" style="background: #28a745; color: white;">
+                    <i class="fas fa-check-circle"></i> Hoàn thành giao hàng
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-shipping-fast"></i>
+            <p>Không có đơn đang giao</p>
+        </div>
+    {% endif %}
+
+{% else %}
+    <!-- Hoàn thành -->
+    {% if completed_orders %}
+        {% for order in completed_orders %}
+        <div class="order-card" style="border-left-color: #28a745;">
+            <div class="order-header">
+                <span class="order-id">
+                    <i class="fas fa-receipt"></i> #{{ order.id }}
+                </span>
+                <span class="badge bg-success">Hoàn thành</span>
+            </div>
+            
+            <div class="order-info">
+                <div class="order-info-item">
+                    <i class="fas fa-check-circle text-success"></i>
+                    Giao lúc: {{ order.delivered_at|date:"H:i" }}
+                </div>
+                <div class="order-info-item">
+                    <i class="fas fa-money-bill-wave text-warning"></i>
+                    <strong>{{ order.total_amount|floatformat:0 }}đ</strong>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-history"></i>
+            <p>Chưa có đơn hoàn thành hôm nay</p>
+        </div>
+    {% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function acceptOrder(orderId) {
+    if (!confirm('Xác nhận nhận đơn hàng này?')) return;
+    
+    fetch(`/shipper/order/${orderId}/accept/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.href = '?tab=picking';
+        } else {
+            alert('Lỗi: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra. Vui lòng thử lại.');
+    });
+}
+
+function markPicked(orderId) {
+    if (!confirm('Xác nhận đã lấy hàng?')) return;
+    
+    fetch(`/shipper/order/${orderId}/picked/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.href = '?tab=delivering';
+        } else {
+            alert('Lỗi: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra. Vui lòng thử lại.');
+    });
+}
+</script>
+{% endblock %}

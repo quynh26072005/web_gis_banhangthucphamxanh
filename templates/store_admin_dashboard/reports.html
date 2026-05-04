@@ -1,0 +1,183 @@
+{% extends 'store_admin_dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Báo cáo - {{ managed_farm.name }}{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">
+                    <i class="fas fa-chart-bar text-danger"></i> Báo cáo
+                </h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'food_store:store_admin_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Báo cáo</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <!-- Thống kê theo ngày -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-calendar-alt"></i> Thống kê đơn hàng theo ngày (7 ngày gần nhất)
+                </h3>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Ngày</th>
+                            <th>Số đơn hàng</th>
+                            <th>Doanh thu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in daily_orders %}
+                        <tr>
+                            <td>{{ stat.date|date:"d/m/Y" }}</td>
+                            <td><span class="badge badge-info">{{ stat.count }}</span></td>
+                            <td><strong>{{ stat.revenue|floatformat:0 }}đ</strong></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">Chưa có dữ liệu</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Thống kê theo trạng thái -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-chart-pie"></i> Thống kê theo trạng thái
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Trạng thái</th>
+                                    <th>Số lượng</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in order_status_stats %}
+                                <tr>
+                                    <td>
+                                        {% if stat.status == 'pending' %}
+                                            <span class="badge badge-warning">Chờ xử lý</span>
+                                        {% elif stat.status == 'confirmed' %}
+                                            <span class="badge badge-info">Đã xác nhận</span>
+                                        {% elif stat.status == 'preparing' %}
+                                            <span class="badge badge-primary">Đang chuẩn bị</span>
+                                        {% elif stat.status == 'ready' %}
+                                            <span class="badge badge-secondary">Sẵn sàng giao</span>
+                                        {% elif stat.status == 'shipping' %}
+                                            <span class="badge badge-info">Đang giao</span>
+                                        {% elif stat.status == 'delivered' %}
+                                            <span class="badge badge-success">Đã giao</span>
+                                        {% elif stat.status == 'cancelled' %}
+                                            <span class="badge badge-danger">Đã hủy</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><strong>{{ stat.count }}</strong></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="2" class="text-center text-muted">Chưa có dữ liệu</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top sản phẩm bán chạy -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-trophy"></i> Top sản phẩm bán chạy
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Sản phẩm</th>
+                                    <th>Số lượng bán</th>
+                                    <th>Doanh thu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in top_products %}
+                                <tr>
+                                    <td><strong>{{ product.product__name }}</strong></td>
+                                    <td><span class="badge badge-success">{{ product.total_quantity }}</span></td>
+                                    <td><strong>{{ product.total_revenue|floatformat:0 }}đ</strong></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">Chưa có dữ liệu</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Báo cáo kiểm kê -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-clipboard-list"></i> Báo cáo kiểm kê gần nhất
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Ngày kiểm kê</th>
+                            <th>Người tạo</th>
+                            <th>Ghi chú</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in inventory_reports %}
+                        <tr>
+                            <td>{{ report.report_date|date:"d/m/Y" }}</td>
+                            <td>{{ report.created_by.get_full_name|default:report.created_by.username }}</td>
+                            <td>{{ report.notes|default:"N/A"|truncatewords:15 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>Chưa có báo cáo kiểm kê nào</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

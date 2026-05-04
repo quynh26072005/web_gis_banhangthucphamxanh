@@ -1,0 +1,49 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}Xóa Giao dịch kho{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Xóa Giao dịch kho</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-danger">
+            <div class="card-header">
+                <h3 class="card-title">Xác nhận xóa</h3>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="card-body">
+                    <p>Bạn có chắc muốn xóa giao dịch này?</p>
+                    <ul>
+                        <li>Loại: <strong>{% if transaction.transaction_type == 'in' %}Nhập hàng{% else %}Xuất hàng{% endif %}</strong></li>
+                        <li>Sản phẩm: <strong>{{ transaction.product.name }}</strong></li>
+                        <li>Số lượng: <strong>{{ transaction.quantity }} {{ transaction.product.unit }}</strong></li>
+                        <li>Ngày: <strong>{{ transaction.transaction_date|date:"d/m/Y H:i" }}</strong></li>
+                    </ul>
+                    <p class="text-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Hành động này sẽ hoàn tác thay đổi tồn kho và không thể khôi phục!
+                    </p>
+                </div>
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Xóa
+                    </button>
+                    <a href="{% url 'food_store:admin_inventory' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Hủy
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

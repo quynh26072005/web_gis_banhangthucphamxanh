@@ -1,0 +1,115 @@
+{% extends 'admin_dashboard/base.html' %}
+
+{% block title %}Quản lý Store Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-user-tie"></i> Quản lý Store Admin</h2>
+        <a href="{% url 'food_store:admin_store_admin_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Thêm Store Admin
+        </a>
+    </div>
+
+    <!-- Search -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-10">
+                    <input type="text" name="search" class="form-control" 
+                           placeholder="Tìm kiếm theo tên, username, chi nhánh..." 
+                           value="{{ search }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Tìm kiếm
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Store Admins List -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Danh sách Store Admin ({{ store_admins.count }})</h5>
+        </div>
+        <div class="card-body">
+            {% if store_admins %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Họ tên</th>
+                            <th>Username</th>
+                            <th>Chi nhánh</th>
+                            <th>Số điện thoại</th>
+                            <th>Quyền hạn</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày tạo</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for store_admin in store_admins %}
+                        <tr>
+                            <td>{{ store_admin.id }}</td>
+                            <td>
+                                <strong>{{ store_admin.user.get_full_name|default:store_admin.user.username }}</strong>
+                            </td>
+                            <td>{{ store_admin.user.username }}</td>
+                            <td>
+                                <span class="badge bg-info">
+                                    <i class="fas fa-store"></i> {{ store_admin.farm.name }}
+                                </span>
+                            </td>
+                            <td>{{ store_admin.phone }}</td>
+                            <td>
+                                <small>
+                                    {% if store_admin.can_manage_products %}<span class="badge bg-success">Sản phẩm</span>{% endif %}
+                                    {% if store_admin.can_manage_orders %}<span class="badge bg-primary">Đơn hàng</span>{% endif %}
+                                    {% if store_admin.can_manage_inventory %}<span class="badge bg-warning">Kho</span>{% endif %}
+                                    {% if store_admin.can_manage_shippers %}<span class="badge bg-info">Shipper</span>{% endif %}
+                                    {% if store_admin.can_view_reports %}<span class="badge bg-secondary">Báo cáo</span>{% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                {% if store_admin.is_active %}
+                                <span class="badge bg-success">Hoạt động</span>
+                                {% else %}
+                                <span class="badge bg-danger">Tạm khóa</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ store_admin.created_at|date:"d/m/Y" }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'food_store:admin_store_admin_detail' store_admin.id %}" 
+                                       class="btn btn-info" title="Chi tiết">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'food_store:admin_store_admin_edit' store_admin.id %}" 
+                                       class="btn btn-warning" title="Sửa">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'food_store:admin_store_admin_delete' store_admin.id %}" 
+                                       class="btn btn-danger" title="Xóa">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Chưa có Store Admin nào. 
+                <a href="{% url 'food_store:admin_store_admin_create' %}">Thêm Store Admin đầu tiên</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

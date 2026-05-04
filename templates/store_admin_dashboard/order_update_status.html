@@ -1,0 +1,112 @@
+{% extends 'store_admin_dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Cập nhật trạng thái đơn hàng #{{ order.id }} - {{ managed_farm.name }}{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">
+                    <i class="fas fa-edit text-primary"></i> Cập nhật trạng thái đơn hàng #{{ order.id }}
+                </h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'food_store:store_admin_dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'food_store:store_admin_orders' %}">Đơn hàng</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'food_store:store_admin_order_detail' order.id %}">#{{ order.id }}</a></li>
+                    <li class="breadcrumb-item active">Cập nhật</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-edit"></i> Cập nhật trạng thái
+                        </h3>
+                    </div>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>Trạng thái hiện tại:</label>
+                                <p>
+                                    {% if order.status == 'pending' %}
+                                        <span class="badge badge-warning">Chờ xử lý</span>
+                                    {% elif order.status == 'confirmed' %}
+                                        <span class="badge badge-info">Đã xác nhận</span>
+                                    {% elif order.status == 'preparing' %}
+                                        <span class="badge badge-primary">Đang chuẩn bị</span>
+                                    {% elif order.status == 'ready' %}
+                                        <span class="badge badge-secondary">Sẵn sàng giao</span>
+                                    {% elif order.status == 'shipping' %}
+                                        <span class="badge badge-info">Đang giao</span>
+                                    {% elif order.status == 'delivered' %}
+                                        <span class="badge badge-success">Đã giao</span>
+                                    {% elif order.status == 'cancelled' %}
+                                        <span class="badge badge-danger">Đã hủy</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="status">Trạng thái mới: <span class="text-danger">*</span></label>
+                                <select name="status" id="status" class="form-control" required>
+                                    <option value="">-- Chọn trạng thái --</option>
+                                    {% for value, label in status_choices %}
+                                    <option value="{{ value }}" {% if value == order.status %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Lưu ý:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Khi chuyển sang trạng thái "Đã giao", hệ thống sẽ tự động cập nhật thời gian giao hàng</li>
+                                    <li>Nếu thanh toán COD, trạng thái thanh toán sẽ tự động chuyển sang "Hoàn thành"</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Cập nhật
+                            </button>
+                            <a href="{% url 'food_store:store_admin_order_detail' order.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Hủy
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-info-circle"></i> Thông tin đơn hàng
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Mã đơn:</strong> #{{ order.id }}</p>
+                        <p><strong>Khách hàng:</strong> {{ order.customer.user.get_full_name|default:order.customer.user.username }}</p>
+                        <p><strong>Tổng tiền:</strong> {{ order.total_amount|floatformat:0 }}đ</p>
+                        <p><strong>Ngày tạo:</strong> {{ order.created_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

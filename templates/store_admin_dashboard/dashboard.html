@@ -1,0 +1,191 @@
+{% extends 'store_admin_dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard Chi nhánh - {{ managed_farm.name }}{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">
+                    <i class="fas fa-store text-success"></i> Dashboard Chi nhánh
+                </h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item active">Dashboard</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <!-- Info boxes -->
+        <div class="row">
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                    <div class="inner">
+                        <h3>{{ total_orders }}</h3>
+                        <p>Tổng đơn hàng</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <a href="{% url 'food_store:store_admin_orders' %}" class="small-box-footer">
+                        Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                    <div class="inner">
+                        <h3>{{ total_products }}</h3>
+                        <p>Sản phẩm</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <a href="{% url 'food_store:store_admin_products' %}" class="small-box-footer">
+                        Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                    <div class="inner">
+                        <h3>{{ total_shippers }}</h3>
+                        <p>Shipper</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-motorcycle"></i>
+                    </div>
+                    <a href="{% url 'food_store:store_admin_shippers' %}" class="small-box-footer">
+                        Xem chi tiết <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-danger">
+                    <div class="inner">
+                        <h3>{{ total_revenue|floatformat:0 }}đ</h3>
+                        <p>Doanh thu</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <a href="{% url 'food_store:store_admin_reports' %}" class="small-box-footer">
+                        Xem báo cáo <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thông tin chi nhánh -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-success">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-store"></i> Thông tin chi nhánh: {{ managed_farm.name }}
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong><i class="fas fa-map-marker-alt"></i> Địa chỉ:</strong><br>
+                                {{ managed_farm.address }}</p>
+                                <p><strong><i class="fas fa-phone"></i> Số điện thoại:</strong><br>
+                                {{ managed_farm.phone }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong><i class="fas fa-calendar"></i> Hôm nay:</strong><br>
+                                {{ orders_today }} đơn hàng</p>
+                                <p><strong><i class="fas fa-exclamation-triangle"></i> Chờ xử lý:</strong><br>
+                                {{ pending_orders }} đơn hàng</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Đơn hàng gần nhất -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-shopping-cart"></i> Đơn hàng gần nhất
+                        </h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Mã đơn</th>
+                                    <th>Khách hàng</th>
+                                    <th>Tổng tiền</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td><a href="{% url 'food_store:store_admin_order_detail' order.id %}">#{{ order.id }}</a></td>
+                                    <td>{{ order.customer.user.get_full_name }}</td>
+                                    <td>{{ order.total_amount|floatformat:0 }}đ</td>
+                                    <td>
+                                        <span class="badge badge-{{ order.status }}">
+                                            {{ order.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ order.created_at|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">Chưa có đơn hàng nào</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sản phẩm sắp hết -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-exclamation-triangle text-warning"></i> Sản phẩm sắp hết
+                        </h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            {% for product in low_stock_products %}
+                            <li class="list-group-item">
+                                <strong>{{ product.name }}</strong>
+                                <span class="badge badge-warning float-right">
+                                    {{ product.stock_quantity }} {{ product.unit }}
+                                </span>
+                            </li>
+                            {% empty %}
+                            <li class="list-group-item text-center text-muted">
+                                Tất cả sản phẩm đều đủ hàng
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

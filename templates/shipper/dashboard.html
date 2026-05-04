@@ -1,0 +1,141 @@
+{% extends 'shipper/base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+{% block header_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Toggle Status -->
+<div class="card-mobile">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h5 class="mb-0 text-high-contrast">Trạng thái làm việc</h5>
+            <small class="text-muted">Bật để nhận đơn hàng mới</small>
+        </div>
+        <div class="form-check form-switch" style="font-size: 2rem;">
+            <input class="form-check-input" type="checkbox" id="statusToggle" 
+                   {% if shipper.status == 'available' %}checked{% endif %}
+                   style="width: 60px; height: 30px; cursor: pointer;">
+        </div>
+    </div>
+    <div id="statusText" class="text-center">
+        <span class="badge badge-mobile {% if shipper.status == 'available' %}bg-success{% else %}bg-secondary{% endif %}" style="font-size: 1rem;">
+            {% if shipper.status == 'available' %}
+            <i class="fas fa-check-circle"></i> Đang sẵn sàng
+            {% else %}
+            <i class="fas fa-moon"></i> Đang nghỉ
+            {% endif %}
+        </span>
+    </div>
+</div>
+
+<!-- Statistics -->
+<div class="row g-3 mb-3">
+    <div class="col-4">
+        <div class="card-mobile text-center">
+            <i class="fas fa-box icon-large text-primary mb-2"></i>
+            <h3 class="mb-0 text-high-contrast">{{ today_deliveries }}</h3>
+            <small class="text-muted">Đơn hôm nay</small>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="card-mobile text-center">
+            <i class="fas fa-money-bill-wave icon-large text-warning mb-2"></i>
+            <h3 class="mb-0 text-high-contrast">{{ cod_holding|floatformat:0 }}đ</h3>
+            <small class="text-muted">COD đang giữ</small>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="card-mobile text-center">
+            <i class="fas fa-coins icon-large text-success mb-2"></i>
+            <h3 class="mb-0 text-high-contrast">{{ today_earnings|floatformat:0 }}đ</h3>
+            <small class="text-muted">Thu nhập</small>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card-mobile">
+    <h5 class="text-high-contrast mb-3">
+        <i class="fas fa-bolt"></i> Thao tác nhanh
+    </h5>
+    <a href="{% url 'food_store:shipper_orders' %}?tab=new" class="btn btn-primary-mobile">
+        <i class="fas fa-plus-circle"></i>
+        Xem đơn hàng mới
+    </a>
+    <a href="{% url 'food_store:shipper_orders' %}?tab=delivering" class="btn btn-warning-mobile">
+        <i class="fas fa-shipping-fast"></i>
+        Đơn đang giao
+    </a>
+</div>
+
+<!-- Tips -->
+<div class="card-mobile" style="background: var(--light-green); border-left: 4px solid var(--primary-green);">
+    <h6 class="text-high-contrast mb-2">
+        <i class="fas fa-lightbulb"></i> Mẹo giao hàng
+    </h6>
+    <ul class="mb-0" style="font-size: 0.9rem;">
+        <li>Kiểm tra kỹ hàng trước khi lấy</li>
+        <li>Gọi khách trước 5-10 phút</li>
+        <li>Chụp ảnh khi giao hàng</li>
+        <li>Giữ rau củ tránh ánh nắng trực tiếp</li>
+    </ul>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toggle = document.getElementById('statusToggle');
+    const statusText = document.getElementById('statusText');
+    
+    toggle.addEventListener('change', function() {
+        const newStatus = this.checked ? 'available' : 'offline';
+        
+        // Show loading
+        statusText.innerHTML = '<div class="spinner"></div>';
+        
+        // Send request
+        fetch('{% url "food_store:shipper_toggle_status" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update UI
+                if (newStatus === 'available') {
+                    statusText.innerHTML = '<span class="badge badge-mobile bg-success" style="font-size: 1rem;"><i class="fas fa-check-circle"></i> Đang sẵn sàng</span>';
+                } else {
+                    statusText.innerHTML = '<span class="badge badge-mobile bg-secondary" style="font-size: 1rem;"><i class="fas fa-moon"></i> Đang nghỉ</span>';
+                }
+                
+                // Show notification
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification('Trạng thái đã cập nhật', {
+                        body: data.message,
+                        icon: '/static/images/logo.png'
+                    });
+                }
+            } else {
+                alert('Lỗi: ' + data.message);
+                toggle.checked = !toggle.checked;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra. Vui lòng thử lại.');
+            toggle.checked = !toggle.checked;
+        });
+    });
+    
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+});
+</script>
+{% endblock %}

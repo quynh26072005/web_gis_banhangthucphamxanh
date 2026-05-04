@@ -1,0 +1,525 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Thanh toán - Chọn địa chỉ giao hàng{% endblock %}
+
+{% block extra_css %}
+<style>
+    #google-map {
+        height: 500px;
+        width: 100%;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        position: relative;
+    }
+    
+    .instruction-box {
+        background: #fff3cd;
+        border: 2px dashed #ffc107;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .instruction-box i {
+        color: #ffc107;
+        font-size: 24px;
+        margin-right: 10px;
+    }
+    
+    .location-info {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .location-info .badge {
+        font-size: 0.9rem;
+        padding: 5px 10px;
+    }
+    
+    .shipping-info {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .shipping-info h6 {
+        color: white;
+        margin-bottom: 15px;
+    }
+    
+    .shipping-detail {
+        display: flex;
+        justify-content-between;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .shipping-detail:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    
+    .gm-style .gm-style-iw-c {
+        padding: 12px !important;
+        border-radius: 8px !important;
+    }
+    
+    .gm-style .gm-style-iw-d {
+        overflow: auto !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">
+        <i class="fas fa-map-marker-alt"></i> Chọn địa chỉ giao hàng
+    </h2>
+
+    <div class="row">
+        <!-- Bản đồ -->
+        <div class="col-lg-8">
+            <!-- Hướng dẫn -->
+            <div class="instruction-box">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-hand-pointer"></i>
+                    <div>
+                        <strong>Hướng dẫn:</strong> Kéo thả pin đỏ trên bản đồ để chọn vị trí giao hàng chính xác. 
+                        Hoặc click vào bản đồ để di chuyển pin.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Google Map -->
+            <div id="google-map"></div>
+
+            <!-- Thông tin vị trí đã chọn -->
+            <div class="location-info">
+                <h6><i class="fas fa-map-pin"></i> Vị trí đã chọn</h6>
+                <div id="selected-address">
+                    <span class="text-muted">Kéo thả pin trên bản đồ để chọn vị trí...</span>
+                </div>
+                <div class="mt-2">
+                    <span class="badge bg-secondary" id="coordinates-display">
+                        Chưa chọn vị trí
+                    </span>
+                </div>
+            </div>
+
+            <!-- Thông tin giao hàng -->
+            <div id="shipping-info-box" class="shipping-info" style="display: none;">
+                <h6><i class="fas fa-shipping-fast"></i> Thông tin giao hàng</h6>
+                <div class="shipping-detail">
+                    <span><i class="fas fa-store"></i> Cửa hàng:</span>
+                    <strong id="store-name">-</strong>
+                </div>
+                <div class="shipping-detail">
+                    <span><i class="fas fa-route"></i> Khoảng cách:</span>
+                    <strong id="distance-display">-</strong>
+                </div>
+                <div class="shipping-detail">
+                    <span><i class="fas fa-clock"></i> Thời gian dự kiến:</span>
+                    <strong id="duration-display">-</strong>
+                </div>
+                <div class="shipping-detail">
+                    <span><i class="fas fa-money-bill-wave"></i> Phí giao hàng:</span>
+                    <strong class="text-warning" id="shipping-fee-display">-</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form thông tin -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user"></i> Thông tin người nhận</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Họ và tên <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="customerName" 
+                               value="{{ user.get_full_name }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                        <input type="tel" class="form-control" id="customerPhone" 
+                               placeholder="0901234567" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Địa chỉ chi tiết <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="deliveryAddress" rows="3" 
+                                  placeholder="Số nhà, tên đường, phường/xã..." required></textarea>
+                        <small class="text-muted">
+                            Địa chỉ sẽ tự động cập nhật khi bạn kéo thả pin trên bản đồ
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Ghi chú</label>
+                        <textarea class="form-control" id="orderNotes" rows="2" 
+                                  placeholder="Ghi chú cho shipper (tùy chọn)"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tóm tắt đơn hàng -->
+            <div class="card mt-3">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-shopping-cart"></i> Đơn hàng</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Sản phẩm:</h6>
+                    {% for item in cart.items.all %}
+                    <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                        <div>
+                            <div>{{ item.product.name }}</div>
+                            <small class="text-muted">{{ item.quantity }} x {{ item.product.price|floatformat:0 }}đ</small>
+                        </div>
+                        <div><strong>{{ item.total_price|floatformat:0 }}đ</strong></div>
+                    </div>
+                    {% endfor %}
+                    
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Tạm tính:</span>
+                        <strong id="subtotal">{{ cart.total_amount|floatformat:0 }}đ</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Phí giao hàng:</span>
+                        <strong class="text-muted" id="shipping-fee">Chưa tính</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3">
+                        <strong class="fs-5">Tổng cộng:</strong>
+                        <strong class="fs-5 text-danger" id="total-amount">{{ cart.total_amount|floatformat:0 }}đ</strong>
+                    </div>
+                    
+                    <button class="btn btn-success btn-lg w-100 mb-2" onclick="placeOrder()">
+                        <i class="fas fa-check-circle"></i> Đặt hàng
+                    </button>
+                    
+                    <a href="{% url 'food_store:cart' %}" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-arrow-left"></i> Quay lại giỏ hàng
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Biến toàn cục
+    let map;
+    let deliveryMarker;
+    let storeMarker;
+    let directionsService;
+    let directionsRenderer;
+    let selectedLocation = null;
+    let nearestStore = null;
+    let shippingFee = 0;
+    let geocoder;
+    
+    // Khởi tạo Google Maps
+    function initMap() {
+        // Tạo map centered tại TP.HCM
+        const hcmCenter = { lat: 10.8231, lng: 106.6297 };
+        
+        map = new google.maps.Map(document.getElementById('google-map'), {
+            center: hcmCenter,
+            zoom: 13,
+            mapTypeControl: true,
+            streetViewControl: false,
+            fullscreenControl: true,
+            zoomControl: true,
+        });
+        
+        // Khởi tạo services
+        geocoder = new google.maps.Geocoder();
+        directionsService = new google.maps.DirectionsService();
+        directionsRenderer = new google.maps.DirectionsRenderer({
+            map: map,
+            suppressMarkers: false,
+            polylineOptions: {
+                strokeColor: '#667eea',
+                strokeWeight: 4,
+                strokeOpacity: 0.7
+            }
+        });
+        
+        // Tạo marker có thể kéo thả
+        deliveryMarker = new google.maps.Marker({
+            position: hcmCenter,
+            map: map,
+            draggable: true,
+            animation: google.maps.Animation.DROP,
+            title: 'Kéo thả để chọn vị trí giao hàng',
+            icon: {
+                url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                scaledSize: new google.maps.Size(40, 40)
+            }
+        });
+        
+        // Info window cho marker
+        const infoWindow = new google.maps.InfoWindow({
+            content: '<strong>Kéo thả tôi!</strong><br>Chọn vị trí giao hàng chính xác'
+        });
+        infoWindow.open(map, deliveryMarker);
+        
+        // Sự kiện khi kéo thả marker
+        deliveryMarker.addListener('dragend', function(event) {
+            const lat = event.latLng.lat();
+            const lng = event.latLng.lng();
+            onLocationSelected(lat, lng);
+        });
+        
+        // Sự kiện click trên bản đồ
+        map.addListener('click', function(event) {
+            const lat = event.latLng.lat();
+            const lng = event.latLng.lng();
+            deliveryMarker.setPosition(event.latLng);
+            onLocationSelected(lat, lng);
+        });
+        
+        // Tự động lấy vị trí hiện tại
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const pos = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    map.setCenter(pos);
+                    deliveryMarker.setPosition(pos);
+                    onLocationSelected(pos.lat, pos.lng);
+                },
+                function() {
+                    console.log('Không thể lấy vị trí hiện tại');
+                }
+            );
+        }
+    }
+    
+    // Xử lý khi chọn vị trí
+    async function onLocationSelected(lat, lng) {
+        selectedLocation = { lat, lng };
+        
+        // Cập nhật hiển thị tọa độ
+        document.getElementById('coordinates-display').textContent = 
+            `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        document.getElementById('coordinates-display').className = 'badge bg-success';
+        
+        // Reverse geocoding để lấy địa chỉ
+        geocoder.geocode({ location: { lat, lng } }, function(results, status) {
+            if (status === 'OK' && results[0]) {
+                const address = results[0].formatted_address;
+                document.getElementById('selected-address').innerHTML = 
+                    `<strong>${address}</strong>`;
+                document.getElementById('deliveryAddress').value = address;
+            }
+        });
+        
+        // Tìm cửa hàng gần nhất và tính phí ship
+        await findNearestStore(lat, lng);
+    }
+    
+    // Tìm cửa hàng gần nhất
+    async function findNearestStore(userLat, userLng) {
+        try {
+            // Lấy danh sách cửa hàng
+            const response = await fetch('/api/get-stores/');
+            const data = await response.json();
+            
+            if (!data.success || !data.stores || data.stores.length === 0) {
+                console.error('Không tìm thấy cửa hàng');
+                return;
+            }
+            
+            // Tính khoảng cách và tìm cửa hàng gần nhất
+            const storesWithDistance = data.stores.map(store => {
+                const distance = calculateDistance(
+                    userLat, userLng,
+                    store.latitude, store.longitude
+                );
+                return { ...store, distance };
+            });
+            
+            storesWithDistance.sort((a, b) => a.distance - b.distance);
+            nearestStore = storesWithDistance[0];
+            
+            // Xóa marker cửa hàng cũ
+            if (storeMarker) {
+                storeMarker.setMap(null);
+            }
+            
+            // Thêm marker cửa hàng mới
+            storeMarker = new google.maps.Marker({
+                position: { lat: nearestStore.latitude, lng: nearestStore.longitude },
+                map: map,
+                icon: {
+                    url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+                    scaledSize: new google.maps.Size(40, 40)
+                },
+                title: nearestStore.name
+            });
+            
+            const storeInfoWindow = new google.maps.InfoWindow({
+                content: `<strong>${nearestStore.name}</strong><br>${nearestStore.address}`
+            });
+            
+            storeMarker.addListener('click', function() {
+                storeInfoWindow.open(map, storeMarker);
+            });
+            
+            // Vẽ route bằng Directions API
+            const request = {
+                origin: { lat: nearestStore.latitude, lng: nearestStore.longitude },
+                destination: { lat: userLat, lng: userLng },
+                travelMode: google.maps.TravelMode.DRIVING
+            };
+            
+            directionsService.route(request, function(result, status) {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(result);
+                    
+                    const route = result.routes[0].legs[0];
+                    const distanceKm = route.distance.value / 1000;
+                    const durationMin = route.duration.value / 60;
+                    
+                    // Tính phí ship
+                    shippingFee = calculateShippingFee(distanceKm);
+                    
+                    // Cập nhật UI
+                    updateShippingInfo(nearestStore.name, distanceKm, durationMin, shippingFee);
+                    updateOrderSummary();
+                } else {
+                    console.error('Directions request failed:', status);
+                    // Fallback: tính phí theo khoảng cách chim bay
+                    shippingFee = calculateShippingFee(nearestStore.distance);
+                    updateShippingInfo(nearestStore.name, nearestStore.distance, null, shippingFee);
+                    updateOrderSummary();
+                }
+            });
+            
+        } catch (error) {
+            console.error('Error finding nearest store:', error);
+        }
+    }
+    
+    // Tính khoảng cách (Haversine formula)
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+    
+    // Tính phí ship
+    function calculateShippingFee(distanceKm) {
+        let fee = 15000;
+        
+        if (distanceKm <= 3) {
+            return fee;
+        } else if (distanceKm <= 10) {
+            fee += (distanceKm - 3) * 3000;
+        } else if (distanceKm <= 20) {
+            fee += 7 * 3000 + (distanceKm - 10) * 2500;
+        } else {
+            fee += 7 * 3000 + 10 * 2500 + (distanceKm - 20) * 2000;
+        }
+        
+        return Math.min(Math.round(fee / 1000) * 1000, 100000);
+    }
+    
+    // Cập nhật thông tin giao hàng
+    function updateShippingInfo(storeName, distance, duration, fee) {
+        document.getElementById('shipping-info-box').style.display = 'block';
+        document.getElementById('store-name').textContent = storeName;
+        document.getElementById('distance-display').textContent = `${distance.toFixed(2)} km`;
+        document.getElementById('duration-display').textContent = duration ? 
+            `${Math.round(duration)} phút` : 'Đang tính...';
+        document.getElementById('shipping-fee-display').textContent = `${fee.toLocaleString()}đ`;
+    }
+    
+    // Cập nhật tóm tắt đơn hàng
+    function updateOrderSummary() {
+        const subtotalText = document.getElementById('subtotal').textContent;
+        const subtotal = parseInt(subtotalText.replace(/\D/g, ''));
+        const total = subtotal + shippingFee;
+        
+        document.getElementById('shipping-fee').textContent = `${shippingFee.toLocaleString()}đ`;
+        document.getElementById('shipping-fee').className = 'text-warning';
+        document.getElementById('total-amount').textContent = `${total.toLocaleString()}đ`;
+    }
+    
+    // Đặt hàng
+    function placeOrder() {
+        const name = document.getElementById('customerName').value.trim();
+        const phone = document.getElementById('customerPhone').value.trim();
+        const address = document.getElementById('deliveryAddress').value.trim();
+        const notes = document.getElementById('orderNotes').value.trim();
+        
+        if (!name || !phone || !address) {
+            alert('Vui lòng điền đầy đủ thông tin!');
+            return;
+        }
+        
+        if (!selectedLocation) {
+            alert('Vui lòng chọn vị trí giao hàng trên bản đồ!');
+            return;
+        }
+        
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+        
+        fetch('/api/create-order/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                latitude: selectedLocation.lat,
+                longitude: selectedLocation.lng,
+                delivery_address: address,
+                notes: notes
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✓ Đặt hàng thành công!');
+                window.location.href = '/order-success/' + data.order_id + '/';
+            } else {
+                alert('Lỗi: ' + data.error);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> Đặt hàng';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra. Vui lòng thử lại!');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> Đặt hàng';
+        });
+    }
+</script>
+
+<!-- Load Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&callback=initMap&libraries=places" async defer></script>
+{% endblock %}

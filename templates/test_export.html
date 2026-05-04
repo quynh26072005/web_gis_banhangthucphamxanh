@@ -1,0 +1,90 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Test Export Functions{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3><i class="fas fa-vial"></i> Test Export Functions</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>Note:</strong> Bạn cần đăng nhập với tài khoản Store Admin để test các chức năng này.
+                    </div>
+                    
+                    <h4>Export URLs:</h4>
+                    <div class="list-group mb-4">
+                        <a href="{% url 'food_store:export_transactions_pdf' %}" class="list-group-item list-group-item-action" target="_blank">
+                            <i class="fas fa-file-pdf text-danger"></i> Export Transactions PDF
+                            <br><small class="text-muted">{% url 'food_store:export_transactions_pdf' %}</small>
+                        </a>
+                        <a href="{% url 'food_store:export_transactions_excel' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-file-excel text-success"></i> Export Transactions Excel
+                            <br><small class="text-muted">{% url 'food_store:export_transactions_excel' %}</small>
+                        </a>
+                        <a href="{% url 'food_store:export_inventory_pdf' %}" class="list-group-item list-group-item-action" target="_blank">
+                            <i class="fas fa-file-pdf text-danger"></i> Export Inventory PDF
+                            <br><small class="text-muted">{% url 'food_store:export_inventory_pdf' %}</small>
+                        </a>
+                        <a href="{% url 'food_store:export_inventory_excel' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-file-excel text-success"></i> Export Inventory Excel
+                            <br><small class="text-muted">{% url 'food_store:export_inventory_excel' %}</small>
+                        </a>
+                    </div>
+                    
+                    <h4>Inventory Page:</h4>
+                    <a href="{% url 'food_store:store_admin_inventory' %}" class="btn btn-primary">
+                        <i class="fas fa-warehouse"></i> Go to Inventory Page
+                    </a>
+                    
+                    <hr>
+                    
+                    <h4>Installed Libraries:</h4>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5>reportlab</h5>
+                                    <p id="reportlab-status">Checking...</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5>openpyxl</h5>
+                                    <p id="openpyxl-status">Checking...</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5>xlsxwriter</h5>
+                                    <p id="xlsxwriter-status">Checking...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Check if user is logged in
+fetch('/api/cart-count/')
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            document.querySelector('.alert-info').innerHTML = '<strong>Warning:</strong> Bạn chưa đăng nhập. <a href="/accounts/login/">Đăng nhập ngay</a>';
+            document.querySelector('.alert-info').classList.remove('alert-info');
+            document.querySelector('.alert').classList.add('alert-warning');
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'admin_dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Xóa Shipper{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Xác nhận xóa quyền Shipper
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">Bạn có chắc chắn muốn xóa quyền shipper của:</p>
+                    
+                    <div class="alert alert-info">
+                        <strong>Họ tên:</strong> {{ shipper.user.get_full_name|default:shipper.user.username }}<br>
+                        <strong>Username:</strong> {{ shipper.user.username }}<br>
+                        <strong>Số điện thoại:</strong> {{ shipper.phone }}<br>
+                        <strong>Biển số xe:</strong> {{ shipper.vehicle_number }}<br>
+                        <strong>Tổng đơn đã giao:</strong> {{ shipper.total_deliveries }}
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Lưu ý:</strong> Chỉ xóa quyền shipper, không xóa tài khoản user. 
+                        User vẫn có thể đăng nhập nhưng không thể truy cập chức năng shipper.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Xác nhận xóa
+                            </button>
+                            <a href="{% url 'food_store:admin_shippers' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Hủy
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
